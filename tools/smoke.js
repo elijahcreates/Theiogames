@@ -10,6 +10,7 @@ const path = require('path');
   const browser = await chromium.launch();
   const ctx = await browser.newContext(mobile ? { viewport: { width: 1024, height: 768 }, hasTouch: true, isMobile: true, deviceScaleFactor: 1 } : { viewport: { width: 1280, height: 800 } });
   const page = await ctx.newPage();
+  if (!args.includes('--pets')) await page.addInitScript(() => { try { const p = JSON.parse(localStorage.getItem('tiog_profile') || '{}'); if (!p.pets || p.pets.length < 33) { p.pets = [...Array(33).keys()]; localStorage.setItem('tiog_profile', JSON.stringify(p)); } } catch (e) {} });
   let errs = [];
   page.on('pageerror', e => errs.push('pageerror: ' + e.message));
   page.on('console', m => { if (m.type() === 'error') errs.push('console: ' + m.text()); });
