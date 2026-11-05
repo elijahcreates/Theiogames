@@ -4591,6 +4591,510 @@ registerGame({
   }
 });
 
+/* ==== 31_sudoku.js ==== */
+/* =====================================================================
+   SUDOKU
+   ===================================================================== */
+registerGame({
+  id: 'sudoku', title: 'Sudoku', emoji: '🧩', c1: '#2c3e50', c2: '#4ca1af', cats: ['Puzzle', 'Brain Games'], pop: true,
+  desc: 'Freshly generated puzzles with a unique solution in Easy, Medium and Hard. Notes, error checking, hints and a completion timer.',
+  controls: 'Tap cell + number • keys 1-9', scoreLabel: 'BEST TIME', lowerBetter: true, fmtScore: v => fmtTime(v),
+  hint: 'Click a cell, then a number (or type 1–9). N toggles notes, H gives a hint, Backspace erases.', hintTouch: 'Tap a cell, then a number. ✎ toggles pencil notes, 💡 gives a hint.',
+  create(E) {
+    const ctx = E.ctx, fx = Fx(), ui = UI();
+    let sol, puz, grid, given, notes, sel = -1, diff = 0, time = 0, mistakes = 0, hints = 0, noteMode = false, done = false, ready = false, flashCell = {};
+    function solve(g, count) { // backtracking solver; returns number of solutions up to `count`
+      let n = 0; const rows = Array.from({ length: 9 }, () => new Set()), cols = Array.from({ length: 9 }, () => new Set()), box = Array.from({ length: 9 }, () => new Set());
+      for (let i = 0; i < 81; i++) if (g[i]) { const r = i / 9 | 0, c = i % 9; rows[r].add(g[i]); cols[c].add(g[i]); box[(r / 3 | 0) * 3 + (c / 3 | 0)].add(g[i]); }
+      function rec() {
+        let best = -1, bestC = null;
+        for (let i = 0; i < 81; i++) if (!g[i]) { const r = i / 9 | 0, c = i % 9, b = (r / 3 | 0) * 3 + (c / 3 | 0); const cand = []; for (let v = 1; v <= 9; v++) if (!rows[r].has(v) && !cols[c].has(v) && !box[b].has(v)) cand.push(v); if (!cand.length) return false; if (!bestC || cand.length < bestC.length) { best = i; bestC = cand; if (cand.length === 1) break; } }
+        if (best < 0) { n++; return n >= count; }
+        const r = best / 9 | 0, c = best % 9, b = (r / 3 | 0) * 3 + (c / 3 | 0);
+        for (const v of (count === 1 ? shuffle(bestC) : bestC)) { g[best] = v; rows[r].add(v); cols[c].add(v); box[b].add(v); if (rec()) return true; rows[r].delete(v); cols[c].delete(v); box[b].delete(v); g[best] = 0; }
+        return false;
+      }
+      rec(); return n;
+    }
+    function generate(d) {
+      const g = Array(81).fill(0); solve(g, 1); sol = g.slice();
+      const target = [38, 31, 26][d]; const p = sol.slice(); const order = shuffle([...Array(81).keys()]);
+      let clues = 81;
+      for (const i of order) { if (clues <= target) break; const v = p[i]; p[i] = 0; if (solve(p.slice(), 2) !== 1) p[i] = v; else clues--; }
+      puz = p; grid = p.slice(); given = p.map(v => v !== 0); notes = Array.from({ length: 81 }, () => new Set());
+      time = 0; mistakes = 0; hints = 0; done = false; sel = -1; ready = true;
+    }
+    E.choose('Sudoku', 'Choose difficulty', [{ label: '🟢 Easy', sub: '38 clues', value: 0 }, { label: '🟡 Medium', sub: '31 clues', value: 1 }, { label: '🔴 Hard', sub: '26 clues', value: 2 }], d => { diff = d; generate(d); });
+    function conflicts(i) { const v = grid[i]; if (!v) return false; const r = i / 9 | 0, c = i % 9; for (let k = 0; k < 9; k++) { if (k !== c && grid[r * 9 + k] === v) return true; if (k !== r && grid[k * 9 + c] === v) return true; } const br = (r / 3 | 0) * 3, bc = (c / 3 | 0) * 3; for (let y = br; y < br + 3; y++) for (let x = bc; x < bc + 3; x++) if ((y * 9 + x) !== i && grid[y * 9 + x] === v) return true; return false; }
+    function put(v) {
+      if (!ready || done || sel < 0 || given[sel]) return;
+      if (noteMode && v) { const s = notes[sel]; if (s.has(v)) s.delete(v); else s.add(v); E.sound('tick'); return; }
+      grid[sel] = v; notes[sel].clear();
+      if (v) {
+        if (v !== sol[sel]) { mistakes++; E.sound('error'); flashCell[sel] = 1; }
+        else { E.sound('click'); const r = sel / 9 | 0, c = sel % 9; for (let k = 0; k < 9; k++) { notes[r * 9 + k].delete(v); notes[k * 9 + c].delete(v); } }
+      }
+      if (grid.every((x, i) => x === sol[i])) win();
+    }
+    function hint() { if (!ready || done) return; const empties = grid.map((v, i) => v !== sol[i] ? i : -1).filter(i => i >= 0); if (!empties.length) return; const i = sel >= 0 && grid[sel] !== sol[sel] ? sel : pick(empties); grid[i] = sol[i]; given[i] = false; hints++; flashCell[i] = -1; sel = i; E.sound('power'); if (grid.every((x, k) => x === sol[k])) win(); }
+    function win() { done = true; E.sound('win'); if (diff === 2) E.ach('sudokuh'); fx.burst(E.W / 2, E.H / 2, 80, { col: ['#fde047', '#4ca1af', '#fff'], spd: 400, shape: 'star', size: 7 }); const sc = Math.round(time + hints * 30); E.gameOver({ score: sc, scoreText: fmtTime(sc), label: 'TIME (+30s per hint)', win: true, title: ['Easy', 'Medium', 'Hard'][diff] + ' Solved!', lines: ['Mistakes: ' + mistakes + '  •  Hints: ' + hints], delay: 1400 }); }
+    function layout() { const W = E.W, H = E.H, portrait = H > W * 1.1; const S = portrait ? Math.min(W - 24, H * 0.62) : Math.min(H - 140, W * 0.58); const gx = portrait ? (W - S) / 2 : Math.max(16, W / 2 - S / 2 - S * 0.28), gy = portrait ? 90 : (H - S) / 2 + 20; return { S, gx, gy, cs: S / 9, portrait }; }
+    return {
+      extra: { label: '💡 Hint', action: hint },
+      update(dt) { if (ready && !done) time += dt; fx.update(dt); for (const k in flashCell) { flashCell[k] = flashCell[k] > 0 ? Math.max(0, flashCell[k] - dt * 1.5) : Math.min(0, flashCell[k] + dt * 1.5); if (!flashCell[k]) delete flashCell[k]; } },
+      draw() {
+        const W = E.W, H = E.H; ui.clear();
+        ctx.fillStyle = lgrad(ctx, 0, 0, W, H, ['#0f2027', '#203a43', '#2c5364']); ctx.fillRect(0, 0, W, H);
+        if (!ready) return;
+        const { S, gx, gy, cs, portrait } = layout();
+        shadowOn(ctx, 'rgba(0,0,0,.5)', 30, 0, 12); rr(ctx, gx - 6, gy - 6, S + 12, S + 12, 14); ctx.fillStyle = '#f8fafc'; ctx.fill(); shadowOff(ctx);
+        const sr = sel >= 0 ? sel / 9 | 0 : -1, sc2 = sel >= 0 ? sel % 9 : -1, sv = sel >= 0 ? grid[sel] : 0;
+        for (let i = 0; i < 81; i++) {
+          const r = i / 9 | 0, c = i % 9, x = gx + c * cs, y = gy + r * cs;
+          let bg = ((r / 3 | 0) + (c / 3 | 0)) % 2 ? '#eef2ff' : '#ffffff';
+          if (sel >= 0 && (r === sr || c === sc2 || ((r / 3 | 0) === (sr / 3 | 0) && (c / 3 | 0) === (sc2 / 3 | 0)))) bg = '#dbeafe';
+          if (sv && grid[i] === sv) bg = '#bfdbfe'; if (i === sel) bg = '#93c5fd';
+          if (flashCell[i] > 0) bg = `rgba(248,113,113,${0.4 + flashCell[i] * 0.6})`; if (flashCell[i] < 0) bg = `rgba(134,239,172,${0.4 - flashCell[i] * 0.6})`;
+          ctx.fillStyle = bg; ctx.fillRect(x, y, cs, cs);
+          if (grid[i]) txt(ctx, String(grid[i]), x + cs / 2, y + cs / 2 + 1, cs * 0.6, given[i] ? '#0f172a' : conflicts(i) || grid[i] !== sol[i] ? '#dc2626' : '#2563eb', 'center', given[i] ? 800 : 600);
+          else if (notes[i].size) for (const v of notes[i]) txt(ctx, String(v), x + ((v - 1) % 3 + 0.5) * cs / 3, y + (((v - 1) / 3 | 0) + 0.5) * cs / 3 + 1, cs * 0.24, '#64748b', 'center', 600);
+          ui.zone('c' + i, x, y, cs, cs);
+        }
+        ctx.strokeStyle = '#94a3b8'; ctx.lineWidth = 1; for (let k = 1; k < 9; k++) { if (k % 3) { ctx.beginPath(); ctx.moveTo(gx + k * cs, gy); ctx.lineTo(gx + k * cs, gy + S); ctx.moveTo(gx, gy + k * cs); ctx.lineTo(gx + S, gy + k * cs); ctx.stroke(); } }
+        ctx.strokeStyle = '#0f172a'; ctx.lineWidth = 3; for (let k = 0; k <= 9; k += 3) { ctx.beginPath(); ctx.moveTo(gx + k * cs, gy); ctx.lineTo(gx + k * cs, gy + S); ctx.moveTo(gx, gy + k * cs); ctx.lineTo(gx + S, gy + k * cs); ctx.stroke(); }
+        // number pad
+        const counts = Array(10).fill(0); grid.forEach((v, i) => { if (v && v === sol[i]) counts[v]++; });
+        let px, py, bw, bh, cols;
+        if (portrait) { cols = 9; bw = Math.min(56, (W - 24) / 9 - 4); bh = bw * 1.15; px = (W - cols * (bw + 4)) / 2; py = gy + S + 20; }
+        else { cols = 3; bw = Math.min(76, S * 0.17); bh = bw; px = gx + S + 36; py = gy + 10; }
+        for (let v = 1; v <= 9; v++) { const k = v - 1, x = px + (k % cols) * (bw + 6), y = py + (k / cols | 0) * (bh + 6); ui.btn(ctx, 'n' + v, x, y, bw, bh, String(v), { cols: counts[v] >= 9 ? ['#475569', '#334155'] : ['#60a5fa', '#2563eb'], size: bh * 0.5 }); }
+        const by = portrait ? py + bh + 14 : py + 3 * (bh + 6) + 8, bx = portrait ? (W - 3 * 110) / 2 : px, bw2 = portrait ? 104 : (bw * 3 + 12 - 12) / 3;
+        ui.btn(ctx, 'note', bx, by, bw2, 46, noteMode ? '✎ ON' : '✎ Notes', { cols: noteMode ? ['#f59e0b', '#d97706'] : ['#64748b', '#475569'], size: 15 });
+        ui.btn(ctx, 'erase', bx + bw2 + 6, by, bw2, 46, '⌫', { cols: ['#64748b', '#475569'], size: 18 });
+        ui.btn(ctx, 'hint', bx + (bw2 + 6) * 2, by, bw2, 46, '💡', { cols: ['#22c55e', '#15803d'], size: 18 });
+        const ix = portrait ? W / 2 : px + (bw * 3 + 12) / 2, iy = portrait ? 56 : by + 80;
+        label(ctx, ['EASY', 'MEDIUM', 'HARD'][diff] + '  •  ⏱ ' + fmtTime(time) + '  •  ✖ ' + mistakes, ix, iy, 17, '#e2e8f0');
+        fx.draw(ctx);
+      },
+      down(x, y) { const b = ui.hit(x, y); if (!b) return; if (b[0] === 'c') { sel = +b.slice(1); E.sound('tick'); } else if (b[0] === 'n') put(+b.slice(1)); else if (b === 'note') noteMode = !noteMode; else if (b === 'erase') put(0); else if (b === 'hint') hint(); },
+      onKey(c) {
+        const m = /^(Digit|Numpad)([0-9])$/.exec(c); if (m) { put(+m[2]); return; }
+        if (c === 'Backspace' || c === 'Delete') put(0); if (c === 'KeyN') noteMode = !noteMode; if (c === 'KeyH') hint();
+        if (sel < 0) sel = 40; const r = sel / 9 | 0, cc = sel % 9;
+        if (c === 'ArrowUp') sel = ((r + 8) % 9) * 9 + cc; if (c === 'ArrowDown') sel = ((r + 1) % 9) * 9 + cc; if (c === 'ArrowLeft') sel = r * 9 + (cc + 8) % 9; if (c === 'ArrowRight') sel = r * 9 + (cc + 1) % 9;
+      },
+      hud() { return null; }
+    };
+  }
+});
+
+/* ==== 32_blockpuzzle.js ==== */
+/* =====================================================================
+   BLOCK PUZZLE
+   ===================================================================== */
+registerGame({
+  id: 'blockpuzzle', title: 'Block Puzzle', emoji: '🟦', c1: '#3a1c71', c2: '#d76d77', cats: ['Puzzle', 'Brain Games'], pop: true,
+  desc: 'Drag colorful shapes onto the 8×8 board. Fill complete rows or columns to clear them – chain clears for big combos!',
+  controls: 'Drag & drop', scoreLabel: 'SCORE',
+  hint: 'Drag pieces onto the board. Complete rows or columns to clear them. Game ends when nothing fits.', hintTouch: 'Drag pieces onto the board. Fill rows or columns to clear!',
+  create(E) {
+    const ctx = E.ctx, fx = Fx(), N = 8;
+    const SHAPES = [[[0, 0]], [[0, 0], [1, 0]], [[0, 0], [0, 1]], [[0, 0], [1, 0], [2, 0]], [[0, 0], [0, 1], [0, 2]], [[0, 0], [1, 0], [0, 1], [1, 1]], [[0, 0], [1, 0], [2, 0], [3, 0]], [[0, 0], [0, 1], [0, 2], [0, 3]], [[0, 0], [0, 1], [1, 1]], [[1, 0], [0, 1], [1, 1]], [[0, 0], [1, 0], [1, 1]], [[0, 0], [1, 0], [0, 1]], [[0, 0], [0, 1], [0, 2], [1, 2]], [[0, 0], [1, 0], [2, 0], [2, 1]], [[1, 0], [1, 1], [0, 2], [1, 2]], [[0, 0], [1, 0], [2, 0], [1, 1]], [[0, 0], [1, 0], [2, 0], [0, 1], [1, 1], [2, 1], [0, 2], [1, 2], [2, 2]], [[0, 0], [1, 0], [2, 0], [3, 0], [4, 0]], [[0, 0], [0, 1], [0, 2], [0, 3], [0, 4]], [[0, 0], [1, 1]], [[0, 0], [1, 0], [2, 0], [0, 1], [0, 2]]];
+    const HUES = [0, 30, 50, 140, 190, 220, 270, 320];
+    const board = Array.from({ length: N }, () => Array(N).fill(null));
+    let tray = [], drag = null, score = 0, combo = 0, t = 0, clearing = [], over = false;
+    function refill() { tray = [0, 1, 2].map(() => ({ s: pick(SHAPES), hue: pick(HUES) })); }
+    refill();
+    function fits(s, gx, gy) { return s.every(([x, y]) => gx + x >= 0 && gy + y >= 0 && gx + x < N && gy + y < N && !board[gy + y][gx + x]); }
+    function anyFit(s) { for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) if (fits(s, x, y)) return true; return false; }
+    function layout() { const W = E.W, H = E.H, S = Math.min(W - 30, H * 0.62, 540), gx = (W - S) / 2, gy = Math.max(70, H * 0.08); return { S, gx, gy, cs: S / N, ty: gy + S + 24, th: Math.min(H - (gy + S + 24) - 10, S * 0.36) }; }
+    function place(i, gx, gy) {
+      const p = tray[i]; p.s.forEach(([x, y]) => board[gy + y][gx + x] = { hue: p.hue, pop: 1 }); score += p.s.length; tray[i] = null; E.sound('land', 20);
+      const rows = [], cols = []; for (let k = 0; k < N; k++) { if (board[k].every(c => c)) rows.push(k); if (board.every(r => r[k])) cols.push(k); }
+      const n = rows.length + cols.length;
+      if (n) { combo++; const pts = n * 10 * n * combo; score += pts; const L = layout(); rows.forEach(r => board[r].forEach((c, x) => clearing.push({ x, y: r, hue: c.hue, t: 0 }))); cols.forEach(c => board.forEach((r, y) => clearing.push({ x: c, y, hue: r[c].hue, t: 0 }))); rows.forEach(r => board[r].fill(null)); cols.forEach(c => board.forEach(r => r[c] = null)); clearing.forEach(cl => { if (cl.t === 0) fx.burst(L.gx + (cl.x + 0.5) * L.cs, L.gy + (cl.y + 0.5) * L.cs, 4, { col: hsl(cl.hue, 85, 60), spd: 200, shape: 's', size: 8, grav: 500 }); }); fx.text(E.W / 2, L.gy + L.S / 2, (n > 1 ? n + ' LINES! ' : '') + '+' + pts + (combo > 1 ? '  COMBO x' + combo : ''), '#fde047', 32); E.sound(n > 1 ? 'cheer' : 'score'); E.shake(n * 3); }
+      else combo = 0;
+      if (tray.every(p => !p)) refill();
+      if (!tray.some(p => p && anyFit(p.s))) { over = true; E.gameOver({ score, title: 'No Moves Left', lines: ['Score: ' + score], delay: 900 }); }
+    }
+    function block(x, y, s, hue, a) { ctx.globalAlpha = a === undefined ? 1 : a; rr(ctx, x + 1.5, y + 1.5, s - 3, s - 3, s * 0.18); ctx.fillStyle = lgrad(ctx, x, y, x, y + s, [hsl(hue, 85, 66), hsl(hue, 80, 48)]); ctx.fill(); ctx.fillStyle = 'rgba(255,255,255,.35)'; rr(ctx, x + s * 0.15, y + s * 0.12, s * 0.7, s * 0.18, s * 0.09); ctx.fill(); ctx.globalAlpha = 1; }
+    function trayPos(i, L) { const w = E.W / 3; return { cx: w * (i + 0.5), cy: L.ty + L.th / 2, s: Math.min(L.cs * 0.6, L.th / 5.2, w / 5.5) }; }
+    return {
+      update(dt) { t += dt; fx.update(dt); clearing.forEach(c => c.t += dt); clearing = clearing.filter(c => c.t < 0.4); board.forEach(r => r.forEach(c => { if (c && c.pop > 0) c.pop = Math.max(0, c.pop - dt * 5); })); },
+      draw() {
+        const W = E.W, H = E.H, L = layout();
+        ctx.fillStyle = lgrad(ctx, 0, 0, W, H, ['#1e1036', '#3a1c71', '#5a2a6e']); ctx.fillRect(0, 0, W, H);
+        for (let i = 0; i < 10; i++) block((i * 173 + t * 10) % W, (i * 97) % H, 40, HUES[i % 8], 0.08);
+        shadowOn(ctx, 'rgba(0,0,0,.5)', 24, 0, 10); rr(ctx, L.gx - 8, L.gy - 8, L.S + 16, L.S + 16, 16); ctx.fillStyle = '#1a1033'; ctx.fill(); shadowOff(ctx);
+        let ghost = null;
+        if (drag) { const gx = Math.round((drag.x - L.gx) / L.cs - drag.ox - 0.5), gy = Math.round((drag.y - L.gy) / L.cs - drag.oy - 0.5); if (fits(drag.p.s, gx, gy)) ghost = { gx, gy }; drag.ghost = ghost; }
+        for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) {
+          const c = board[y][x], px = L.gx + x * L.cs, py = L.gy + y * L.cs;
+          if (c) { const k = 1 + c.pop * 0.12; block(px + L.cs * (1 - k) / 2, py + L.cs * (1 - k) / 2, L.cs * k, c.hue); }
+          else { rr(ctx, px + 2, py + 2, L.cs - 4, L.cs - 4, 6); ctx.fillStyle = 'rgba(255,255,255,.06)'; ctx.fill(); }
+        }
+        if (ghost) drag.p.s.forEach(([x, y]) => block(L.gx + (ghost.gx + x) * L.cs, L.gy + (ghost.gy + y) * L.cs, L.cs, drag.p.hue, 0.4));
+        for (const c of clearing) { const k = 1 - c.t / 0.4; ctx.globalAlpha = k; rr(ctx, L.gx + c.x * L.cs, L.gy + c.y * L.cs, L.cs, L.cs, 6); ctx.fillStyle = '#fff'; ctx.fill(); ctx.globalAlpha = 1; }
+        tray.forEach((p, i) => {
+          if (!p || (drag && drag.i === i)) return; const tp = trayPos(i, L); const w = Math.max(...p.s.map(q => q[0])) + 1, h = Math.max(...p.s.map(q => q[1])) + 1;
+          const ok = anyFit(p.s); p.s.forEach(([x, y]) => block(tp.cx + (x - w / 2) * tp.s, tp.cy + (y - h / 2) * tp.s, tp.s, ok ? p.hue : 0, ok ? 1 : 0.35));
+        });
+        if (drag) { drag.p.s.forEach(([x, y]) => block(drag.x + (x - drag.ox) * L.cs - L.cs / 2, drag.y + (y - drag.oy) * L.cs - L.cs / 2, L.cs, drag.p.hue, 0.95)); }
+        fx.draw(ctx);
+        label(ctx, fmt(score), W / 2, Math.max(36, L.gy - 34), 34, '#fff');
+      },
+      down(x, y) {
+        if (over) return; const L = layout();
+        tray.forEach((p, i) => { if (!p) return; const tp = trayPos(i, L); if (Math.abs(x - tp.cx) < E.W / 6 && Math.abs(y - tp.cy) < L.th / 2 + 20) { const w = Math.max(...p.s.map(q => q[0])) + 1, h = Math.max(...p.s.map(q => q[1])) + 1; drag = { i, p, x, y: y - L.cs * 1.6, ox: (w - 1) / 2, oy: h - 1 + 0.5, lift: L.cs * 1.6 }; E.sound('tick'); } });
+      },
+      move(x, y) { if (drag) { drag.x = x; drag.y = y - drag.lift; } },
+      up() { if (!drag) return; const g = drag.ghost; if (g) place(drag.i, g.gx, g.gy); drag = null; },
+      hud() { return { stats: [['Best', fmt(E.best())]].concat(combo > 1 ? [['Combo', 'x' + combo]] : []) }; }
+    };
+  }
+});
+
+/* ==== 33_wordscramble.js ==== */
+/* =====================================================================
+   WORD SCRAMBLE
+   ===================================================================== */
+registerGame({
+  id: 'wordscramble', title: 'Word Scramble', emoji: '🔤', c1: '#ff512f', c2: '#dd2476', cats: ['Puzzle', 'Brain Games'],
+  desc: 'Unscramble the letters before the clock runs out. Three difficulty levels, hints that reveal letters, and streak bonuses.',
+  controls: 'Type or tap letters', scoreLabel: 'SCORE',
+  hint: 'Type the word (Enter to submit, Backspace to erase) or click the letters. 💡 reveals a letter, ⏭ skips.', hintTouch: 'Tap the letters in the right order. 💡 reveals a letter, ⏭ skips.',
+  create(E) {
+    const ctx = E.ctx, fx = Fx(), ui = UI();
+    const WORDS = [
+      'APPLE BEACH CHAIR DANCE EAGLE FROST GRAPE HONEY JUICE KOALA LEMON MANGO NOISE OCEAN PIANO QUEEN RIVER SNAKE TIGER UNCLE VOICE WHALE YOUTH ZEBRA CLOUD BREAD TRAIN PLANT SMILE STORM CANDY HORSE MOUSE PIZZA ROBOT SPACE SPOON STONE TOWER WATER LIGHT MAGIC MUSIC PAPER PARTY SHEEP SHIRT SPORT SUGAR TABLE TEETH TRUCK',
+      'BANANA CASTLE DRAGON FLOWER GARDEN HAMMER ISLAND JUNGLE KITTEN LADDER MARBLE NAPKIN ORANGE PENCIL PLANET RABBIT ROCKET SCHOOL SPIDER TURTLE VIOLIN WINDOW YELLOW BUTTON CAMERA COOKIE DOCTOR FOREST GUITAR HELMET INSECT JACKET LIZARD MONKEY PEANUT PUZZLE SADDLE SUMMER TICKET TOMATO WALRUS WIZARD BALLOON BICYCLE CABBAGE CAPTAIN DOLPHIN FREEDOM GIRAFFE HOLIDAY KITCHEN LANTERN MONSTER PENGUIN PICTURE RAINBOW SCIENCE TEACHER VOLCANO WEATHER',
+      'ADVENTURE AIRPLANE ASTRONAUT BLUEBERRY BUTTERFLY CHAMPION CHOCOLATE DINOSAUR DISCOVERY ELEPHANT EXPLORER FIREWORKS FRIENDSHIP GRASSHOPPER HAMBURGER HEDGEHOG IMAGINATION JELLYFISH KANGAROO LIGHTHOUSE MARSHMALLOW MOUNTAIN NOTEBOOK OCTOPUS PAINTBRUSH PINEAPPLE PLAYGROUND QUESTION SANDWICH SKATEBOARD SNOWFLAKE SPACESHIP STRAWBERRY SUBMARINE SUNFLOWER TELESCOPE THUNDERSTORM TREASURE UMBRELLA UNIVERSE VEGETABLE WATERMELON WONDERFUL'
+    ].map(s => s.split(' '));
+    let diff = 0, word = '', letters = [], used = [], answer = [], round = 0, ROUNDS = 10, score = 0, time = 0, maxT = 30, streak = 0, hintsUsed = 0, revealed = 0, ready = false, t = 0, feedback = 0, fbCol = '#fff', solved = 0, pool = [];
+    function next() {
+      if (round >= ROUNDS) { E.gameOver({ score, win: solved >= 7, title: 'Round Complete!', lines: ['Words solved: ' + solved + ' / ' + ROUNDS, 'Difficulty: ' + ['Easy', 'Medium', 'Hard'][diff]] }); ready = false; return; }
+      round++; word = pool.pop(); let sc; do { sc = shuffle(word.split('')); } while (sc.join('') === word && word.length > 1);
+      letters = sc; used = letters.map(() => false); answer = []; revealed = 0; time = maxT; hintsUsed = 0;
+    }
+    E.choose('Word Scramble', 'Choose difficulty', [{ label: '🟢 Easy', sub: '5-letter words • 30 s each', value: 0 }, { label: '🟡 Medium', sub: '6-7 letters • 40 s each', value: 1 }, { label: '🔴 Hard', sub: '8+ letters • 50 s each', value: 2 }], d => { diff = d; maxT = [30, 40, 50][d]; pool = shuffle(WORDS[d].slice()); ready = true; next(); });
+    function typeLetter(ch) { const i = letters.findIndex((l, k) => l === ch && !used[k]); if (i < 0) { E.sound('tick'); return; } used[i] = true; answer.push(i); E.sound('click'); if (answer.length === word.length) check(); }
+    function back() { if (answer.length <= revealed) return; const i = answer.pop(); used[i] = false; E.sound('tick'); }
+    function check() {
+      const guess = answer.map(i => letters[i]).join('');
+      if (guess === word) { streak++; solved++; const pts = Math.round(time * 10) + word.length * 20 + streak * 15 - hintsUsed * 40; score += Math.max(10, pts); E.sound('win'); feedback = 1; fbCol = '#4ade80'; fx.burst(E.W / 2, E.H * 0.4, 40, { col: ['#fde047', '#4ade80', '#fff'], spd: 320, shape: 'star' }); fx.text(E.W / 2, E.H * 0.3, '+' + Math.max(10, pts) + (streak > 1 ? '  🔥x' + streak : ''), '#fde047', 32); setTimeout(() => { if (ready) next(); }, 700); }
+      else { E.sound('error'); feedback = 1; fbCol = '#f87171'; E.shake(6); while (answer.length > revealed) used[answer.pop()] = false; }
+    }
+    function hint() {
+      if (!ready || revealed >= word.length - 1) return;
+      while (answer.length > revealed) used[answer.pop()] = false;
+      const ch = word[revealed], i = letters.findIndex((l, k) => l === ch && !used[k]); used[i] = true; answer.push(i); revealed++; hintsUsed++; E.sound('power');
+    }
+    function skip() { if (!ready) return; streak = 0; fx.text(E.W / 2, E.H * 0.3, word, '#f87171', 30); E.sound('bad'); next(); }
+    return {
+      typing: true,
+      update(dt) { t += dt; fx.update(dt); feedback = Math.max(0, feedback - dt * 2); if (!ready) return; time -= dt; if (time <= 0) { streak = 0; fx.text(E.W / 2, E.H * 0.3, "TIME! It was " + word, '#f87171', 28); E.sound('bad'); next(); } },
+      draw() {
+        const W = E.W, H = E.H; ui.clear();
+        ctx.fillStyle = lgrad(ctx, 0, 0, W, H, ['#4a0e2e', '#7a1f4a', '#b33a3a']); ctx.fillRect(0, 0, W, H);
+        ctx.globalAlpha = 0.07; for (let i = 0; i < 30; i++) txt(ctx, String.fromCharCode(65 + (i * 7) % 26), (i * 137) % W, (i * 89 + t * 15) % H, 40 + (i % 3) * 20, '#fff', 'center', 900); ctx.globalAlpha = 1;
+        if (!ready || !word) return;
+        const n = word.length, ts = Math.min(64, (W - 40) / n - 8);
+        label(ctx, 'WORD ' + round + ' / ' + ROUNDS + '   •   SCORE ' + fmt(score), W / 2, 34, 18, '#fde68a');
+        // timer bar
+        const bw = Math.min(500, W - 40); rr(ctx, W / 2 - bw / 2, 56, bw, 12, 6); ctx.fillStyle = 'rgba(0,0,0,.35)'; ctx.fill(); rr(ctx, W / 2 - bw / 2, 56, bw * time / maxT, 12, 6); ctx.fillStyle = time < 8 ? '#f87171' : '#4ade80'; ctx.fill();
+        // answer slots
+        const ay = H * 0.3, ax = W / 2 - (n * (ts + 8)) / 2;
+        for (let k = 0; k < n; k++) { const x = ax + k * (ts + 8); rr(ctx, x, ay, ts, ts * 1.1, 10); ctx.fillStyle = feedback > 0 ? fbCol : 'rgba(255,255,255,.12)'; ctx.globalAlpha = feedback > 0 ? 0.4 + feedback * 0.6 : 1; ctx.fill(); ctx.globalAlpha = 1; ctx.strokeStyle = 'rgba(255,255,255,.4)'; ctx.lineWidth = 2; ctx.stroke(); if (answer[k] !== undefined) txt(ctx, letters[answer[k]], x + ts / 2, ay + ts * 0.58, ts * 0.6, k < revealed ? '#fde047' : '#fff', 'center', 900); }
+        // letter tiles
+        const ly = H * 0.52;
+        letters.forEach((l, k) => { const x = ax + k * (ts + 8), bob = Math.sin(t * 3 + k) * 3; if (used[k]) { rr(ctx, x, ly, ts, ts * 1.1, 10); ctx.fillStyle = 'rgba(0,0,0,.2)'; ctx.fill(); return; } ui.btn(ctx, 'L' + k, x, ly + bob, ts, ts * 1.1, l, { cols: ['#fef3c7', '#fbbf24'], color: '#7c2d12', size: ts * 0.55 }); });
+        const by = H * 0.52 + ts * 1.1 + 30, bw2 = Math.min(130, (W - 60) / 4);
+        [['back', '⌫ Undo'], ['shuf', '🔀 Shuffle'], ['hint', '💡 Hint'], ['skip', '⏭ Skip']].forEach(([id, l], k) => ui.btn(ctx, id, W / 2 - (bw2 * 4 + 30) / 2 + k * (bw2 + 10), by, bw2, 46, l, { cols: id === 'hint' ? ['#22c55e', '#15803d'] : id === 'skip' ? ['#64748b', '#475569'] : ['#a855f7', '#7e22ce'], size: 15 }));
+        if (streak > 1) label(ctx, '🔥 STREAK x' + streak, W / 2, H * 0.22, 22, '#fdba74');
+        fx.draw(ctx);
+      },
+      down(x, y) { const b = ui.hit(x, y); if (!b || !ready) return; if (b[0] === 'L') { const k = +b.slice(1); if (!used[k]) { used[k] = true; answer.push(k); E.sound('click'); if (answer.length === word.length) check(); } } else if (b === 'back') back(); else if (b === 'shuf') { const keep = answer.map(i => letters[i]); const free = letters.filter((l, k) => !used[k]); shuffle(free); letters = keep.concat(free); used = letters.map((l, k) => k < keep.length); answer = keep.map((l, k) => k); E.sound('swish'); } else if (b === 'hint') hint(); else if (b === 'skip') skip(); },
+      onKey(c, key) { if (!ready) return; if (c === 'Backspace') back(); else if (c === 'Enter') { if (answer.length === word.length) check(); } else if (key && /^[a-z]$/i.test(key)) typeLetter(key.toUpperCase()); },
+      hud() { return null; }
+    };
+  }
+});
+
+/* ==== 34_mathswap.js ==== */
+/* =====================================================================
+   MATH SWAP
+   ===================================================================== */
+registerGame({
+  id: 'mathswap', title: 'Math Swap', emoji: '➗', c1: '#11998e', c2: '#0575e6', cats: ['Puzzle', 'Brain Games'], isNew: true,
+  desc: 'Swap numbered tiles between equations until every line is correct. Addition, subtraction, multiplication and division – against the clock!',
+  controls: 'Tap two tiles to swap', scoreLabel: 'POINTS',
+  hint: 'Click a number tile, then another to swap them. Make every equation true before time runs out!', hintTouch: 'Tap two number tiles to swap them. Make every equation true!',
+  create(E) {
+    const ctx = E.ctx, fx = Fx(), ui = UI();
+    let level = 1, rows = [], tiles = [], sel = -1, time = 60, score = 0, combo = 0, swaps = 0, t = 0, solvedRows = [], wait = 0, anim = {};
+    function makeRow(ops) {
+      const op = pick(ops); let a, b, c;
+      const mx = 5 + level * 2;
+      if (op === '+') { a = irand(1, mx); b = irand(1, mx); c = a + b; }
+      else if (op === '−') { a = irand(2, mx + 5); b = irand(1, a - 1); c = a - b; }
+      else if (op === '×') { a = irand(2, Math.min(12, 3 + level)); b = irand(2, Math.min(12, 3 + level)); c = a * b; }
+      else { b = irand(2, Math.min(12, 2 + level)); c = irand(2, Math.min(12, 2 + level)); a = b * c; }
+      return { op, v: [a, b, c] };
+    }
+    function setup() {
+      const ops = level < 2 ? ['+'] : level < 4 ? ['+', '−'] : level < 6 ? ['+', '−', '×'] : ['+', '−', '×', '÷'];
+      const n = Math.min(5, 2 + Math.floor((level - 1) / 2)); rows = []; for (let i = 0; i < n; i++) rows.push(makeRow(ops));
+      tiles = []; rows.forEach((r, ri) => r.v.forEach((v, k) => tiles.push({ v, ri, k })));
+      const vals = tiles.map(x => x.v); let tries = 0;
+      do { shuffle(vals); tiles.forEach((x, i) => x.v = vals[i]); tries++; } while (rows.some((r, i) => ok(i)) && tries < 50 || tries < 2);
+      time = Math.max(35, 75 - level * 3) + n * 8; sel = -1; swaps = 0; solvedRows = rows.map(() => false); wait = 0;
+    }
+    function val(ri, k) { return tiles.find(x => x.ri === ri && x.k === k).v; }
+    function ok(ri) { const r = rows[ri], a = val(ri, 0), b = val(ri, 1), c = val(ri, 2); return r.op === '+' ? a + b === c : r.op === '−' ? a - b === c : r.op === '×' ? a * b === c : b !== 0 && a / b === c; }
+    setup();
+    function swap(i, j) {
+      const a = tiles[i], b = tiles[j], v = a.v; a.v = b.v; b.v = v; swaps++; anim[i] = 1; anim[j] = 1; E.sound('swish');
+      rows.forEach((r, ri) => { const now = ok(ri); if (now && !solvedRows[ri]) { combo++; const pts = 50 * combo; score += pts; E.sound('score'); fx.text(E.W / 2, E.H * 0.2, 'LINE! +' + pts + (combo > 1 ? '  COMBO x' + combo : ''), '#fde047', 26); } solvedRows[ri] = now; });
+      if (rows.every((r, ri) => solvedRows[ri])) { const bonus = Math.round(time * 10) + level * 50; score += bonus; E.sound('win'); fx.burst(E.W / 2, E.H / 2, 60, { col: ['#fde047', '#22d3ee', '#4ade80'], spd: 380, shape: 'star' }); fx.text(E.W / 2, E.H * 0.85, 'LEVEL CLEAR! +' + bonus, '#4ade80', 30); wait = 1.6; }
+    }
+    function layout() { const W = E.W, H = E.H, n = rows.length, ts = Math.min(78, (W - 40) / 5.6, (H - 180) / (n * 1.25)), rh = ts * 1.22; return { ts, rh, x0: W / 2 - ts * 5.4 / 2, y0: Math.max(100, (H - n * rh) / 2) }; }
+    return {
+      update(dt) { t += dt; fx.update(dt); for (const k in anim) { anim[k] -= dt * 4; if (anim[k] <= 0) delete anim[k]; }
+        if (wait > 0) { wait -= dt; if (wait <= 0) { level++; combo = Math.max(1, combo); setup(); } return; }
+        time -= dt; if (time <= 0) { time = 0; E.gameOver({ score, title: "Time's Up!", lines: ['Reached level ' + level, 'Lines solved: ' + solvedRows.filter(Boolean).length + ' / ' + rows.length] }); } },
+      draw() {
+        const W = E.W, H = E.H; ui.clear();
+        ctx.fillStyle = lgrad(ctx, 0, 0, W, H, ['#052e2b', '#0b3d6b', '#1e1b4b']); ctx.fillRect(0, 0, W, H);
+        ctx.globalAlpha = 0.07; ['+', '−', '×', '÷', '=', '7', '3', '9'].forEach((s, i) => { for (let k = 0; k < 4; k++) txt(ctx, s, (i * 151 + k * 337) % W, (k * 211 + i * 67 + t * 12) % H, 60, '#fff', 'center', 900); }); ctx.globalAlpha = 1;
+        const L = layout();
+        label(ctx, 'LEVEL ' + level + '  •  ⏱ ' + Math.ceil(time) + 's  •  ' + fmt(score) + ' pts', W / 2, 40, 20, time < 10 ? '#fca5a5' : '#e0f2fe');
+        rows.forEach((r, ri) => {
+          const y = L.y0 + ri * L.rh, good = solvedRows[ri];
+          rr(ctx, L.x0 - 14, y - 8, L.ts * 5.4 + 28, L.ts + 16, 16); ctx.fillStyle = good ? 'rgba(74,222,128,.22)' : 'rgba(255,255,255,.06)'; ctx.fill(); if (good) { ctx.strokeStyle = '#4ade80'; ctx.lineWidth = 2; ctx.stroke(); }
+          const slots = [0, 'op', 1, '=', 2];
+          slots.forEach((s, k) => {
+            const x = L.x0 + k * L.ts * 1.1;
+            if (s === 'op' || s === '=') { txt(ctx, s === 'op' ? r.op : '=', x + L.ts / 2, y + L.ts / 2 + 2, L.ts * 0.6, '#fde68a', 'center', 900); return; }
+            const ti = tiles.findIndex(q => q.ri === ri && q.k === s), tile = tiles[ti], a = anim[ti] || 0, isSel = ti === sel;
+            ui.btn(ctx, 'T' + ti, x, y - (isSel ? 6 : 0) - a * 6, L.ts, L.ts, String(tile.v), { cols: isSel ? ['#fde047', '#f59e0b'] : good ? ['#86efac', '#16a34a'] : ['#93c5fd', '#2563eb'], color: isSel ? '#422006' : '#fff', size: L.ts * (String(tile.v).length > 2 ? 0.38 : 0.48) });
+          });
+          if (good) label(ctx, '✓', L.x0 + L.ts * 5.6, y + L.ts / 2, L.ts * 0.4, '#4ade80');
+        });
+        fx.draw(ctx);
+        label(ctx, 'Swaps: ' + swaps + (combo > 1 ? '   •   Combo x' + combo : ''), W / 2, H - 30, 16, '#cbd5e1');
+      },
+      down(x, y) { if (wait > 0) return; const b = ui.hit(x, y); if (!b) { sel = -1; return; } const i = +b.slice(1); if (sel < 0) { sel = i; E.sound('tick'); } else if (sel === i) sel = -1; else { swap(sel, i); sel = -1; } },
+      hud() { return null; }
+    };
+  }
+});
+
+/* ==== 35_parking.js ==== */
+/* =====================================================================
+   PARKING JAM  (sliding-car puzzle with BFS-verified levels)
+   ===================================================================== */
+registerGame({
+  id: 'parking', title: 'Parking Jam', emoji: '🚗', c1: '#f7971e', c2: '#d50000', cats: ['Puzzle', 'Brain Games'], hot: true,
+  desc: 'Slide cars and trucks around a crowded lot to clear a path for your red car. Every puzzle is generated and verified solvable – they get harder as you go!',
+  controls: 'Drag vehicles', scoreLabel: 'LEVELS SOLVED',
+  hint: 'Drag cars along their direction. Get the RED car out through the exit on the right!', hintTouch: 'Drag cars along their lane. Free the RED car through the exit!',
+  create(E) {
+    const ctx = E.ctx, fx = Fx(), N = 6, EXIT_ROW = 2;
+    let level = E.data('level', 1), cars = [], moves = 0, optimal = 0, drag = null, t = 0, winT = 0, history = [];
+    const COLS = ['#3b82f6', '#22c55e', '#a855f7', '#f59e0b', '#14b8a6', '#ec4899', '#64748b', '#84cc16', '#0ea5e9', '#f97316', '#8b5cf6', '#eab308'];
+    function occ(cs, skip) { const g = Array(36).fill(-1); cs.forEach((c, i) => { if (i === skip) return; for (let k = 0; k < c.len; k++) { const x = c.h ? c.x + k : c.x, y = c.h ? c.y : c.y + k; g[y * 6 + x] = i; } }); return g; }
+    function solve(cs, limit) {
+      const key = s => s.join(','), start = cs.map(c => c.h ? c.x : c.y), seen = new Map([[key(start), 0]]); let q = [start], depth = 0;
+      while (q.length && depth < 40) {
+        const nq = [];
+        for (const s of q) {
+          if (s[0] === 4) return depth;
+          const g = Array(36).fill(-1); cs.forEach((c, i) => { for (let k = 0; k < c.len; k++) { const x = c.h ? s[i] + k : c.x, y = c.h ? c.y : s[i] + k; g[y * 6 + x] = i; } });
+          cs.forEach((c, i) => {
+            for (const d of [-1, 1]) { let p = s[i]; while (true) { const np = p + d; if (np < 0 || np + c.len > 6) break; const cell = c.h ? c.y * 6 + (d > 0 ? np + c.len - 1 : np) : (d > 0 ? np + c.len - 1 : np) * 6 + c.x; if (g[cell] !== -1) break; p = np; const ns = s.slice(); ns[i] = p; const k = key(ns); if (!seen.has(k)) { seen.set(k, 1); nq.push(ns); } } }
+          });
+          if (seen.size > limit) return -1;
+        }
+        q = nq; depth++;
+      }
+      return -1;
+    }
+    function generate() {
+      const want = Math.min(4 + level, 18), t0 = performance.now(); let best = null, bestD = -1;
+      while (performance.now() - t0 < 350) {
+        const cs = [{ x: irand(0, 2), y: EXIT_ROW, len: 2, h: true, col: '#ef4444', red: true }];
+        const n = irand(Math.min(6 + level, 11), Math.min(8 + level, 13));
+        for (let k = 0; k < n * 4 && cs.length < n; k++) {
+          const len = Math.random() < 0.3 ? 3 : 2, h = Math.random() < 0.5, x = irand(0, h ? 6 - len : 5), y = irand(0, h ? 5 : 6 - len);
+          if (h && y === EXIT_ROW) continue;
+          const g = occ(cs, -1); let free = true; for (let j = 0; j < len; j++) if (g[(h ? y : y + j) * 6 + (h ? x + j : x)] !== -1) free = false;
+          if (free) cs.push({ x, y, len, h, col: COLS[cs.length % COLS.length] });
+        }
+        const d = solve(cs, 60000);
+        if (d > bestD) { bestD = d; best = cs; if (d >= want) break; }
+      }
+      cars = best; optimal = bestD; moves = 0; history = []; winT = 0;
+    }
+    generate();
+    function layout() { const W = E.W, H = E.H, S = Math.min(W - 60, H - 170, 560), gx = (W - S) / 2 - S * 0.03, gy = Math.max(84, (H - S) / 2 + 10); return { S, gx, gy, cs: S / N }; }
+    function drawCar(c, L, off) {
+      const cs = L.cs, x = L.gx + (c.h ? c.x + (off || 0) : c.x) * cs, y = L.gy + (c.h ? c.y : c.y + (off || 0)) * cs, w = c.h ? c.len * cs : cs, h = c.h ? cs : c.len * cs, p = cs * 0.08;
+      ctx.save(); ctx.translate(x + w / 2, y + h / 2); if (!c.h) ctx.rotate(Math.PI / 2); const lw = c.h ? w : h, lh = c.h ? h : w;
+      shadowOn(ctx, 'rgba(0,0,0,.45)', 10, 3, 5); rr(ctx, -lw / 2 + p, -lh / 2 + p, lw - p * 2, lh - p * 2, cs * 0.18); ctx.fillStyle = lgrad(ctx, 0, -lh / 2, 0, lh / 2, [c.col, c.col]); ctx.fill(); shadowOff(ctx);
+      ctx.fillStyle = 'rgba(255,255,255,.18)'; rr(ctx, -lw / 2 + p * 2, -lh / 2 + p * 1.6, lw - p * 4, lh * 0.18, 6); ctx.fill();
+      ctx.fillStyle = 'rgba(15,23,42,.75)'; const ww = c.len === 3 ? lw * 0.18 : lw * 0.2; rr(ctx, lw / 2 - p * 2 - ww - lw * 0.08, -lh / 2 + p * 2.2, ww, lh - p * 4.4, 5); ctx.fill(); rr(ctx, -lw / 2 + p * 2 + lw * 0.06, -lh / 2 + p * 2.6, ww * 0.8, lh - p * 5.2, 5); ctx.fill();
+      if (c.len === 3) { ctx.fillStyle = 'rgba(0,0,0,.15)'; ctx.fillRect(-lw / 2 + p * 2, -lh / 2 + p * 2, lw * 0.55, lh - p * 4); }
+      ctx.fillStyle = '#fef08a'; ctx.fillRect(lw / 2 - p - 4, -lh / 2 + p * 2, 4, lh * 0.18); ctx.fillRect(lw / 2 - p - 4, lh / 2 - p * 2 - lh * 0.18, 4, lh * 0.18);
+      ctx.fillStyle = '#ef4444'; ctx.fillRect(-lw / 2 + p, -lh / 2 + p * 2, 3, lh * 0.15); ctx.fillRect(-lw / 2 + p, lh / 2 - p * 2 - lh * 0.15, 3, lh * 0.15);
+      if (c.red) { ctx.fillStyle = '#fff'; ctx.font = `900 ${cs * 0.22}px system-ui`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('★', 0, 0); }
+      ctx.restore();
+    }
+    function curOffset(c) { return drag && drag.c === c ? drag.off : 0; }
+    function limits(i) { const c = cars[i], g = occ(cars, i); let lo = c.h ? c.x : c.y, hi = lo; while (lo - 1 >= 0 && g[c.h ? c.y * 6 + lo - 1 : (lo - 1) * 6 + c.x] === -1) lo--; while (hi + c.len < 6 && g[c.h ? c.y * 6 + hi + c.len : (hi + c.len) * 6 + c.x] === -1) hi++; return [lo, hi]; }
+    function undo() { if (!history.length || winT) return; const h = history.pop(); cars[h.i].x = h.x; cars[h.i].y = h.y; moves = Math.max(0, moves - 1); E.sound('click'); }
+    return {
+      extra: { label: '↶ Undo', action: undo },
+      update(dt) { t += dt; fx.update(dt); if (winT) { winT += dt; const r = cars[0]; r.x += dt * 9; if (winT > 1.6) { E.coins(5 + level); level++; E.save('level', level); E.submitBest(level - 1); generate(); } } },
+      draw() {
+        const W = E.W, H = E.H, L = layout(), cs = L.cs;
+        ctx.fillStyle = '#334155'; ctx.fillRect(0, 0, W, H);
+        ctx.fillStyle = lgrad(ctx, 0, 0, 0, H, ['#475569', '#1e293b']); ctx.fillRect(0, 0, W, H);
+        for (let i = 0; i < 40; i++) { circle(ctx, (i * 173) % W, (i * 97) % H, 2 + i % 3, 'rgba(255,255,255,.04)'); }
+        // lot
+        shadowOn(ctx, 'rgba(0,0,0,.5)', 24, 0, 10); rr(ctx, L.gx - 14, L.gy - 14, L.S + 28, L.S + 28, 18); ctx.fillStyle = '#a3a3a3'; ctx.fill(); shadowOff(ctx);
+        ctx.fillStyle = '#3f3f46'; ctx.fillRect(L.gx, L.gy, L.S, L.S);
+        ctx.strokeStyle = 'rgba(255,255,255,.18)'; ctx.lineWidth = 2; ctx.setLineDash([cs * 0.25, cs * 0.15]); for (let k = 1; k < N; k++) { ctx.beginPath(); ctx.moveTo(L.gx + k * cs, L.gy); ctx.lineTo(L.gx + k * cs, L.gy + L.S); ctx.moveTo(L.gx, L.gy + k * cs); ctx.lineTo(L.gx + L.S, L.gy + k * cs); ctx.stroke(); } ctx.setLineDash([]);
+        // exit
+        const ey = L.gy + EXIT_ROW * cs; ctx.fillStyle = '#3f3f46'; ctx.fillRect(L.gx + L.S, ey, 40, cs); ctx.fillStyle = '#fde047'; for (let k = 0; k < 4; k++) ctx.fillRect(L.gx + L.S + 4 + k * 9, ey + (k % 2 ? 0 : cs - 6), 6, 6);
+        label(ctx, 'EXIT ➜', L.gx + L.S + 22, ey - 14, 14, '#fde047');
+        ctx.save(); ctx.beginPath(); ctx.rect(L.gx - 4, L.gy - 4, L.S + (winT ? 400 : 8), L.S + 8); ctx.clip();
+        cars.forEach(c => drawCar(c, L, curOffset(c)));
+        ctx.restore();
+        fx.draw(ctx);
+        label(ctx, 'LEVEL ' + level, W / 2, Math.max(30, L.gy - 52), 26, '#fff');
+        label(ctx, 'Moves: ' + moves + '   •   Best possible: ' + optimal, W / 2, Math.max(56, L.gy - 26), 15, '#cbd5e1');
+        if (winT) label(ctx, moves <= optimal ? 'PERFECT SOLVE! ⭐⭐⭐' : moves <= optimal * 1.5 ? 'SOLVED! ⭐⭐' : 'SOLVED! ⭐', W / 2, L.gy + L.S + 36, 26, '#fde047');
+      },
+      down(x, y) {
+        if (winT) return; const L = layout(); const gx = Math.floor((x - L.gx) / L.cs), gy = Math.floor((y - L.gy) / L.cs); if (gx < 0 || gy < 0 || gx >= 6 || gy >= 6) return;
+        const g = occ(cars, -1), i = g[gy * 6 + gx]; if (i < 0) return; const c = cars[i];
+        drag = { c, i, sx: x, sy: y, off: 0, lim: limits(i), base: c.h ? c.x : c.y }; E.sound('tick');
+      },
+      move(x, y) { if (!drag) return; const L = layout(), c = drag.c, d = (c.h ? x - drag.sx : y - drag.sy) / L.cs; drag.off = clamp(d, drag.lim[0] - drag.base, drag.lim[1] - drag.base); },
+      up() {
+        if (!drag) return; const c = drag.c, n = Math.round(drag.off);
+        if (n) { history.push({ i: drag.i, x: c.x, y: c.y }); if (c.h) c.x += n; else c.y += n; moves++; E.sound('whoosh', 60); }
+        drag = null;
+        if (cars[0].x === 4) { winT = 0.01; E.sound('win'); fx.burst(E.W / 2, E.H / 2, 60, { col: ['#fde047', '#ef4444', '#fff'], spd: 380, shape: 'star' }); }
+      },
+      hud() { return null; }
+    };
+  }
+});
+
+/* ==== 36_quiz.js ==== */
+/* =====================================================================
+   THE IMPOSSIBLE QUIZ  (original trick questions)
+   ===================================================================== */
+registerGame({
+  id: 'quiz', title: 'The Impossible Quiz', emoji: '❓', c1: '#ee0979', c2: '#ff6a00', cats: ['Brain Games', 'Puzzle'], hot: true,
+  desc: '30 sneaky, silly and surprising questions. Read carefully – hidden answers, moving buttons, ticking bombs and questions where doing nothing is the answer!',
+  controls: 'Click / tap', scoreLabel: 'QUESTIONS',
+  hint: 'Read every question carefully. You have 3 lives. Not every answer is a button…', hintTouch: 'Read carefully! 3 lives. Not every answer is a button…',
+  create(E) {
+    const ctx = E.ctx, fx = Fx(), ui = UI();
+    const Q = [
+      { q: 'What colour is the sky on a sunny day?', a: ['Blue', 'Green', 'Plaid', 'Banana'], c: 0 },
+      { q: "How many letters are in 'the alphabet'?", a: ['26', '11', '8', '1'], c: 1 },
+      { q: 'Click the biggest number.', a: ['7', '3', '9', '2'], c: 2, sizes: [1.1, 1.4, 0.55, 2.1] },
+      { q: 'What do cows drink?', a: ['Milk', 'Water', 'Lemonade', 'Moo juice'], c: 1 },
+      { q: 'Which is heavier: a kilo of feathers or a kilo of bricks?', a: ['Feathers', 'Bricks', 'They weigh the same', 'Bricks, obviously'], c: 2 },
+      { q: 'Find the hidden answer to pass this question.', a: ['Here', 'There', 'Nowhere', 'Everywhere'], hidden: 'answer' },
+      { q: 'You pass the person in 2nd place in a race. What place are you in now?', a: ['1st', '2nd', '3rd', 'Last'], c: 1 },
+      { q: 'QUICK! Defuse the bomb – click the RED wire!', a: ['Blue wire', 'Red wire', 'Green wire', 'Yellow wire'], c: 2, colors: ['#3b82f6', '#22c55e', '#ef4444', '#eab308'], timer: 6 },
+      { q: "Don't touch ANYTHING for 5 seconds.", a: ['Click me!', 'No, me!', 'Pick me!', "I'm the answer!"], wait: 5 },
+      { q: 'What has keys but can’t open locks?', a: ['A piano', 'A janitor', 'A door', 'A lock-pick'], c: 0 },
+      { q: 'Which letter comes right after Q?', a: ['P', 'R', 'S', 'Q'], c: 1 },
+      { q: 'How many months have 28 days?', a: ['1', '2', '12', '6'], c: 2 },
+      { q: 'Catch the right answer! Which planet do we live on?', a: ['Earth', 'Mars', 'Jupiter', 'Pluto'], c: 0, move: 0 },
+      { q: 'What is 2 + 2 × 2?', a: ['8', '6', '4', '222'], c: 1 },
+      { q: 'Click the dot.', a: ['The dot', 'A dot', 'Dot!', '• dot •'], tiny: true },
+      { q: 'BONUS: You found a spare life! Which button gives it to you?', a: ['This one', 'This one', 'This one', 'This one'], c: 3, bonus: true },
+      { q: 'Which word is spelled incorrectly in every dictionary?', a: ['Incorrectly', 'Wrong', 'Dictionary', 'Every'], c: 0 },
+      { q: 'What goes up but never comes down?', a: ['A balloon', 'Your age', 'Rain', 'A rocket'], c: 1 },
+      { q: 'How many sides does a circle have?', a: ['0', '1', '2 (inside & outside)', 'Infinite'], c: 2 },
+      { q: 'Click the second word of this question to continue.', a: ['Second', 'Word', 'Continue', 'Click'], hidden: 'the' },
+      { q: 'Which of these is NOT a fruit?', a: ['Tomato', 'Banana', 'Carrot', 'Apple'], c: 2 },
+      { q: 'What can you catch but not throw?', a: ['A ball', 'A cold', 'A frisbee', 'A fish'], c: 1 },
+      { q: "QUICK! What's 10 − 10 + 1?", a: ['0', '1', '10', '11'], c: 1, timer: 5 },
+      { q: 'Where does Friday come before Thursday?', a: ['In a dictionary', 'On Mars', 'Never', 'In a calendar'], c: 0 },
+      { q: "Click 'YES' to continue.", a: ['YES', 'NO', 'MAYBE', 'YES?'], c: 0, move: 0 },
+      { q: 'What gets wetter the more it dries?', a: ['A towel', 'A sponge', 'The ocean', 'A fish'], c: 0 },
+      { q: 'Click the word with the FEWEST letters.', a: ['ANT', 'hippopotamus', 'tiger', 'zebra'], c: 0, sizes: [0.6, 2.0, 1.2, 1.1] },
+      { q: 'Patience is a virtue… the answer is coming…', a: ['Now?', 'Now!', 'NOW!!', 'Hurry up!'], wait: 6 },
+      { q: 'What has a neck but no head?', a: ['A bottle', 'A giraffe', 'A snake', 'A turtle'], c: 0 },
+      { q: 'Final question! What number is this question?', a: ['29', '30', '31', 'Final'], c: 1 }
+    ];
+    let qi = 0, lives = 3, t = 0, qt = 0, flash = 0, fcol = '#fff', mv = { x: 0, y: 0, tx: 0, ty: 0 }, dot = { x: 0, y: 0 }, wordZones = [], busy = 0, pointer = { x: -999, y: -999 };
+    function setupQ() { qt = 0; const q = Q[qi]; dot.x = rand(0.15, 0.85); dot.y = rand(0.62, 0.92); mv.x = mv.tx = 0; mv.y = mv.ty = 0; }
+    setupQ();
+    function right() { flash = 1; fcol = '#4ade80'; E.sound('score'); fx.burst(E.W / 2, E.H * 0.35, 30, { col: ['#4ade80', '#fff', '#fde047'], spd: 260, shape: 'star' }); if (Q[qi].bonus) lives++; busy = 0.6; }
+    function wrong() { flash = 1; fcol = '#ef4444'; lives--; E.sound('error'); E.shake(10); busy = 0.6; if (lives <= 0) E.gameOver({ score: qi, title: 'Out of Lives!', lines: ['You reached question ' + (qi + 1) + ' of ' + Q.length, '“' + Q[qi].q + '”'] }); else setupQ(); }
+    function nextQ() { qi++; if (qi >= Q.length) { E.gameOver({ score: Q.length, win: true, title: 'You Beat the Impossible Quiz!', lines: ['Lives left: ' + lives] }); return; } setupQ(); }
+    function boxes() { const W = E.W, H = E.H, bw = Math.min(330, (W - 50) / 2), bh = Math.min(84, H * 0.11), x0 = W / 2 - bw - 8, y0 = H * 0.5; return [0, 1, 2, 3].map(i => ({ x: x0 + (i % 2) * (bw + 16), y: y0 + Math.floor(i / 2) * (bh + 16), w: bw, h: bh })); }
+    return {
+      update(dt) {
+        t += dt; qt += dt; fx.update(dt); flash = Math.max(0, flash - dt * 2);
+        if (busy > 0) { busy -= dt; if (busy <= 0 && fcol === '#4ade80') nextQ(); return; }
+        const q = Q[qi];
+        if (q.timer && qt > q.timer) { fx.burst(E.W / 2, E.H * 0.3, 60, { col: ['#f97316', '#fde047', '#ef4444'], spd: 420 }); E.sound('boom'); wrong(); }
+        if (q.wait && qt > q.wait) right();
+        if (q.move !== undefined) {
+          const B = boxes()[q.move], cx = B.x + B.w / 2 + mv.x, cy = B.y + B.h / 2 + mv.y;
+          if (!E.touch) { if (Math.hypot(pointer.x - cx, pointer.y - cy) < 120 && qt < 7) { const a = Math.atan2(cy - pointer.y, cx - pointer.x); mv.tx = clamp(mv.tx + Math.cos(a) * 160, -E.W * 0.35, E.W * 0.35); mv.ty = clamp(mv.ty + Math.sin(a) * 120, -E.H * 0.35, E.H * 0.08); } }
+          else if (Math.floor(qt / 0.9) !== Math.floor((qt - dt) / 0.9) && qt < 8) { mv.tx = rand(-E.W * 0.3, E.W * 0.3); mv.ty = rand(-E.H * 0.25, E.H * 0.05); }
+          mv.x += (mv.tx - mv.x) * Math.min(1, dt * 10); mv.y += (mv.ty - mv.y) * Math.min(1, dt * 10);
+        }
+      },
+      draw() {
+        const W = E.W, H = E.H, q = Q[qi]; ui.clear(); wordZones = [];
+        ctx.fillStyle = lgrad(ctx, 0, 0, W, H, ['#2b0a3d', '#5b1647', '#93291e']); ctx.fillRect(0, 0, W, H);
+        for (let i = 0; i < 14; i++) { ctx.globalAlpha = 0.08; txt(ctx, '?', (i * 173 + Math.sin(t + i) * 20) % W, (i * 113) % H, 60 + (i % 4) * 30, '#fff', 'center', 900); } ctx.globalAlpha = 1;
+        label(ctx, 'QUESTION ' + (qi + 1) + ' / ' + Q.length, W / 2, 36, 20, '#fde68a');
+        label(ctx, '❤️'.repeat(Math.max(0, lives)), W / 2, 68, 22, '#fff');
+        // question card with word wrapping
+        const cw = Math.min(760, W - 30), cx0 = W / 2 - cw / 2, fs = Math.min(30, W / 22);
+        shadowOn(ctx, 'rgba(0,0,0,.4)', 20, 0, 8); rr(ctx, cx0, H * 0.14, cw, H * 0.3, 22); ctx.fillStyle = '#fff7ed'; ctx.fill(); shadowOff(ctx);
+        ctx.font = `800 ${fs}px system-ui`; const words = q.q.split(' '); const lines = [[]]; let lw = 0;
+        for (const w of words) { const ww = ctx.measureText(w + ' ').width; if (lw + ww > cw - 50 && lines[lines.length - 1].length) { lines.push([]); lw = 0; } lines[lines.length - 1].push(w); lw += ww; }
+        const ly0 = H * 0.29 - (lines.length - 1) * fs * 0.65;
+        lines.forEach((ln, li) => { const total = ctx.measureText(ln.join(' ')).width; let x = W / 2 - total / 2; const y = ly0 + li * fs * 1.3; ln.forEach(w => { const ww = ctx.measureText(w).width; ctx.fillStyle = '#7c2d12'; ctx.textAlign = 'left'; ctx.textBaseline = 'middle'; ctx.fillText(w, x, y); wordZones.push({ w: w.replace(/[^a-z]/gi, '').toLowerCase(), x, y: y - fs / 2, ww, h: fs }); x += ww + ctx.measureText(' ').width; }); });
+        if (q.timer) { const left = Math.max(0, q.timer - qt); label(ctx, '💣 ' + left.toFixed(1), W / 2, H * 0.42, 26, left < 2 ? '#ef4444' : '#7c2d12'); }
+        // answers
+        boxes().forEach((b, i) => {
+          let x = b.x, y = b.y; if (q.move === i) { x += mv.x; y += mv.y; }
+          const cols = q.colors ? [q.colors[i], q.colors[i]] : [['#f472b6', '#db2777'], ['#60a5fa', '#2563eb'], ['#4ade80', '#16a34a'], ['#fbbf24', '#d97706']][i];
+          ui.btn(ctx, 'a' + i, x, y, b.w, b.h, q.a[i], { cols, size: Math.min(26, b.h * 0.34) * (q.sizes ? q.sizes[i] : 1) });
+        });
+        if (q.tiny) { const x = dot.x * W, y = dot.y * H; circle(ctx, x, y, 2.4, '#fde68a'); ui.zone('dot', x - 12, y - 12, 24, 24); }
+        if (flash) { ctx.fillStyle = fcol; ctx.globalAlpha = flash * 0.3; ctx.fillRect(0, 0, W, H); ctx.globalAlpha = 1; label(ctx, fcol === '#4ade80' ? (Q[qi] && Q[qi].bonus ? '+1 LIFE!' : 'CORRECT!') : 'WRONG!', W / 2, H * 0.47, 40, fcol); }
+        fx.draw(ctx);
+      },
+      down(x, y) {
+        if (busy > 0) return; const q = Q[qi];
+        if (q.hidden) { const z = wordZones.find(z => x >= z.x && x <= z.x + z.ww && y >= z.y && y <= z.y + z.h); if (z) { const idx = wordZones.indexOf(z); if ((q.hidden === 'the' && idx === 1) || (q.hidden !== 'the' && z.w === q.hidden)) return right(); return; } }
+        const b = ui.hit(x, y); if (!b) return;
+        if (b === 'dot') return right();
+        if (q.wait || q.tiny || q.hidden) return wrong();
+        if (+b.slice(1) === q.c) right(); else wrong();
+      },
+      move(x, y) { pointer.x = x; pointer.y = y; },
+      onKey(c) { const q = Q[qi]; if (busy > 0) return; if (qi === 10 && c === 'KeyR') right(); },
+      hud() { return null; }
+    };
+  }
+});
+
 /* =====================================================================
    BOOT – metadata for the original 5 games, then render
    ===================================================================== */
