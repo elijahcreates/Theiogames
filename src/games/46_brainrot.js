@@ -313,6 +313,7 @@ registerGame({
         for (const b of BASES) { ctx.fillStyle = b.owner.col; ctx.globalAlpha = 0.6; ctx.fillRect(mx + b.x / MW * mw, my + b.y / MH * mh, b.w / MW * mw, b.h / MH * mh); ctx.globalAlpha = 1; }
         for (const a of actors) circle(ctx, mx + a.x / MW * mw, my + a.y / MH * mh, a.me ? 3.5 : 2.5, a.me ? '#fde047' : '#fff');
       },
+      _dbg: () => ({ x: Math.round(player.x), y: Math.round(player.y), money: Math.round(S.money), carry: player.carry && player.carry.k, near: nearAct && nearAct.label }),
       onKey(c) { if (c === 'KeyE' || c === 'Space' || c === 'Enter') act(); if (c === 'KeyL') lockBase(); if (c === 'KeyB') openBase(); if (c === 'KeyU') openShop(); if (c === 'KeyI') openIndex(); },
       down() { if (!E.touch && nearAct) act(); },
       destroy() { save(); E.pads(null); },

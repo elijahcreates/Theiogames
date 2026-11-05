@@ -430,7 +430,7 @@ E.touch = isTouchDevice();
 /* ---- input (keyboard + mouse + touch joystick + pointer) ---- */
 const keys = {};
 const Input = (() => {
-  let boostKey = false, boostBtn = false;
+  let boostKey = false, boostBtn = false, lastKeyT = 0, lastMouseT = 0;
   const ptr = { active: false, kind: 'mouse', x: 0, y: 0, sx: 0, sy: 0, id: null };
   const JR = 58, joy = $('#joy'), knob = $('#knob'), bb = $('#boostBtn');
   const joyMode = () => E.def && E.def.input === 'joy';
@@ -441,7 +441,7 @@ const Input = (() => {
   window.addEventListener('keydown', e => {
     const typing = e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA');
     if (typing) return;
-    keys[e.code] = true;
+    keys[e.code] = true; lastKeyT = performance.now();
     if (e.code === 'Space') boostKey = true;
     if (E.running && (e.code === 'Space' || e.code.indexOf('Arrow') === 0 || e.code === 'Tab' || e.code === 'Backspace')) e.preventDefault();
     if (!e.repeat) E.onKey(e.code, e.key);
@@ -465,7 +465,7 @@ const Input = (() => {
   cv.addEventListener('pointermove', e => {
     E.px = e.clientX; E.py = e.clientY;
     if (!joyMode()) { if (gp() && E.g.move) E.g.move(e.clientX, e.clientY, e.pointerId, e); return; }
-    if (e.pointerType === 'mouse') { ptr.kind = 'mouse'; ptr.active = true; ptr.x = e.clientX; ptr.y = e.clientY; }
+    if (e.pointerType === 'mouse') { ptr.kind = 'mouse'; ptr.active = true; ptr.x = e.clientX; ptr.y = e.clientY; lastMouseT = performance.now(); }
     else if (e.pointerId === ptr.id) { ptr.x = e.clientX; ptr.y = e.clientY; setKnob(); }
   });
   const up = e => {
@@ -489,7 +489,7 @@ const Input = (() => {
       const y = L ? (keys[L[3]] ? 1 : 0) - (keys[L[2]] ? 1 : 0) : ((keys.ArrowDown || keys.KeyS) ? 1 : 0) - ((keys.ArrowUp || keys.KeyW) ? 1 : 0);
       if (x || y) { const m = Math.hypot(x, y); return { x: x / m, y: y / m, mag: 1 }; }
       if (set) return ZERO;
-      if (ptr.active) {
+      if (ptr.active && (ptr.kind === 'touch' || lastMouseT > lastKeyT)) {
         if (ptr.kind === 'touch') {
           const dx = ptr.x - ptr.sx, dy = ptr.y - ptr.sy, d = Math.hypot(dx, dy);
           if (d < 8) return ZERO; return { x: dx / d, y: dy / d, mag: clamp(d / JR, 0, 1) };
