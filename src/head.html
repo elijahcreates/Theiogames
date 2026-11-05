@@ -247,6 +247,14 @@ footer{text-align:center;color:var(--muted);font-size:.82rem;padding:10px 16px 3
   #bar button,#petChip{padding:7px 9px;font-size:.82rem;min-height:34px}
   #petChip u{width:30px}
 }
+@media (max-width:1024px) and (orientation:portrait){
+  #bar{flex-direction:column;align-items:flex-start;max-width:none}
+  #bar button,#petChip{min-width:42px;justify-content:center}
+  #btnMenu span{display:none}
+  #petChip{flex-direction:column;gap:2px;padding:5px 6px;font-size:.72rem}
+  #petChip u{width:28px}
+  #hudL{left:calc(max(8px,env(safe-area-inset-left)) + 54px);top:max(8px,env(safe-area-inset-top))}
+}
 @media (max-height:480px){ #hudR .br:nth-child(n+6){display:none} #boostBtn{width:76px;height:76px} .chip{padding:3px 8px} }
 </style>
 </head>
@@ -271,7 +279,7 @@ footer{text-align:center;color:var(--muted);font-size:.82rem;padding:10px 16px 3
   <canvas id="cv"></canvas>
   <div id="layer"></div>
   <div id="bar">
-    <button id="btnMenu" tabindex="-1" title="Back to games menu">☰ Menu</button>
+    <button id="btnMenu" tabindex="-1" title="Back to games menu">☰<span> Menu</span></button>
     <button id="btnPause" tabindex="-1" title="Pause (P)">❚❚</button>
     <button id="btnRestart" tabindex="-1" title="Restart">↻</button>
     <button id="btnMute" tabindex="-1" title="Mute (M)">🔊</button>

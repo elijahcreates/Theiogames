@@ -10,8 +10,7 @@ const path = require('path');
   page.on('pageerror', e => errs.push(e.message)); page.on('console', m => { if (m.type() === 'error') errs.push(m.text()); });
   await page.goto('file://' + path.resolve(__dirname, '../index.html') + (id === 'home' ? '' : '#' + id));
   await page.waitForTimeout(400);
-  const bs = await page.$$('#chooser:not([hidden]) #cOpts button'); if (bs.length) await bs[a.includes('--p2') && bs[1] ? 1 : 0].click();
-  await page.waitForTimeout(200);
+  for (let k = 0; k < 2; k++) { const bs = await page.$$('#chooser:not([hidden]) #cOpts button'); if (bs.length) await bs[a.includes('--p2') && bs[1] && k === 0 ? 1 : 0].click(); await page.waitForTimeout(200); }
   for (let i = 0; i < a.length; i++) {
     if (a[i] === '--click') { const [x, y] = a[i + 1].split(',').map(Number); await page.mouse.click(x, y); await page.waitForTimeout(150); }
     if (a[i] === '--key') { await page.keyboard.press(a[i + 1]); await page.waitForTimeout(100); }

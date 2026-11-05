@@ -154,10 +154,10 @@ registerGame({
             if (B.y > 0) { B.y = 0; return fail('Hit the Floor!'); }
           }
         } else if (B.state === 'dead') { deadT += dt; B.a += (B.a % TAU > Math.PI ? 1 : -1) * 0; B.vy += G * dt; B.y = Math.min(0, B.y + B.vy * dt * 0.4); B.a = lerp(B.a, Math.PI / 2 * (B.a % TAU > Math.PI ? 3 : 1), Math.min(1, dt * 5)); }
-        const tx = B.x - E.W * 0.32 / (E.H / 680); camX += (tx - camX) * Math.min(1, dt * 3);
+        const tx = B.x - E.W * 0.3 / Math.min(E.H / 680, E.W / 900); camX += (tx - camX) * Math.min(1, dt * 3);
       },
       draw() {
-        const W = E.W, H = E.H, s = H / 680, th = THEMES[theme], fy = H * 0.86;
+        const W = E.W, H = E.H, s = Math.min(H / 680, W / 900), th = THEMES[theme], fy = H * 0.86;
         ctx.fillStyle = lgrad(ctx, 0, 0, 0, fy, th.wall); ctx.fillRect(0, 0, W, fy);
         // wallpaper pattern
         ctx.fillStyle = 'rgba(255,255,255,.12)'; const off = -(camX * s * 0.4) % 60; for (let x = off; x < W; x += 60) for (let y = 20; y < fy; y += 60) { circle(ctx, x, y + ((x - off) / 60 % 2) * 30, 6); ctx.fill(); }
