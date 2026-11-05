@@ -118,7 +118,9 @@ function UI() {
 /* letterbox a fixed-size world onto the screen */
 function fitView(E, ww, wh, pad) {
   const p = pad === undefined ? 0 : pad;
-  const s = Math.min((E.W - p * 2) / ww, (E.H - p * 2) / wh), ox = (E.W - ww * s) / 2, oy = (E.H - wh * s) / 2;
+  let s = Math.min((E.W - p * 2) / ww, (E.H - p * 2) / wh), ox = (E.W - ww * s) / 2, oy = (E.H - wh * s) / 2;
+  // keep the top button bar from covering the play field when there is no side margin for it
+  if (ox < 230 && oy < 50) { const top = 50; s = Math.min((E.W - p * 2) / ww, (E.H - top - p) / wh); ox = (E.W - ww * s) / 2; oy = top + (E.H - top - wh * s) / 2; }
   return { s, ox, oy, apply(ctx) { ctx.setTransform(E.dpr * s, 0, 0, E.dpr * s, E.dpr * ox, E.dpr * oy); }, toWorld(x, y) { return { x: (x - ox) / s, y: (y - oy) / s }; } };
 }
 
