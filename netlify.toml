@@ -1,0 +1,23 @@
+# Netlify configuration for TheIOGames
+# The site is a single static file (index.html) – no build step is needed.
+[build]
+  publish = "."
+  command = ""
+
+# Games are deep-linked with #hash URLs (e.g. /#bottle), so every path
+# should serve the main page instead of a 404.
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+
+[[headers]]
+  for = "/index.html"
+  [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"
