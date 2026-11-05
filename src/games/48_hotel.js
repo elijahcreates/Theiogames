@@ -1,166 +1,157 @@
 /* =====================================================================
-   HOTEL SIMULATOR
+   HOTEL SIMULATOR  (walk-around hotel tycoon)
+   You ARE the manager: walk to the desk to check guests in, grab towels &
+   food from the supply room, clean rooms, collect cash and stand on the
+   green build pads to unlock rooms, staff and upgrades.
    ===================================================================== */
 registerGame({
-  id: 'hotel', title: 'Hotel Simulator', emoji: '🏨', c1: '#c79081', c2: '#dfa579', cats: ['Simulation', 'Creative'], featured: true, isNew: true,
-  desc: 'Run your own hotel! Build and furnish rooms, check in guests, keep rooms spotless, hire staff, add a restaurant and pool, and grow a 5-star tower. Saves automatically.',
-  controls: 'Tap guests, rooms & buttons', scoreLabel: 'HOTEL VALUE ($)', fmtScore: v => '$' + fmtBig(v),
-  hint: 'Tap a waiting guest to check them in • tap dirty rooms to clean • tap empty slots to build • 👥 Staff & ⭐ Upgrades buttons at the bottom. Drag to scroll.', hintTouch: 'Tap guests to check in • tap rooms to clean/build/upgrade • drag to scroll.',
+  id: 'hotel', title: 'Hotel Simulator', emoji: '🏨', c1: '#c79081', c2: '#dfa579', cats: ['Simulation', 'Creative'], featured: true, isNew: true, input: 'joy',
+  desc: 'Walk around your own hotel as the manager! Check in guests at the front desk, deliver towels and room service, clean rooms, collect cash and build new rooms, staff and upgrades.',
+  controls: 'WASD / joystick • just walk to things', scoreLabel: 'HOTEL VALUE ($)', fmtScore: v => '$' + fmtBig(v),
+  hint: 'Move with WASD / arrows / mouse. Stand behind the desk to check guests in, step on 💵 to collect, stand in dirty rooms to clean, stand on green pads to build!', hintTouch: 'Drag to walk. Stand behind the desk to check guests in • walk over cash • stand in dirty rooms to clean • stand on green pads to build!',
   create(E) {
-    const ctx = E.ctx, fx = Fx(), ui = UI(), FH = 130, BWID = 960, SHAFT = 110, RW = (BWID - SHAFT) / 3, LOBBY = 170;
-    const LV = [{ n: 'Cozy', price: 40, sat: 0.0, cost: 150 }, { n: 'Deluxe', price: 90, sat: 0.12, cost: 600 }, { n: 'Suite', price: 200, sat: 0.25, cost: 2500 }, { n: 'Royal', price: 450, sat: 0.4, cost: 9000 }];
-    const S = Object.assign({ money: 400, floors: 1, rooms: [{ lv: 0, st: 'clean' }, null, null], staff: { rec: 0, maid: 0, bell: 0 }, fac: { lobby: 0, rest: 0, pool: 0, lift: 0 }, day: 1, rating: 3.5, served: 0, earned: 0 }, E.data('save', {}));
-    S.rooms = S.rooms.map(r => r ? { lv: r.lv, st: r.st === 'occupied' ? 'dirty' : r.st } : null);
-    let guests = [], queueT = 2, t = 0, dayT = 0, camY = 0, drag = null, saveT = 0, cleaning = {}, maidT = 0, recT = 0, ratings = [], sel = null;
-    const STAFF = [['rec', '💁 Receptionist', 'Checks guests in automatically', 300], ['maid', '🧹 Housekeeper', 'Cleans dirty rooms automatically', 250], ['bell', '🛎️ Bellhop', 'Guests move 30% faster (per hire)', 400]];
-    const FAC = [['lobby', '🪴 Lobby Décor', '+satisfaction for every guest', 500], ['rest', '🍽️ Restaurant', '+$ per guest from meals', 1200], ['pool', '🏊 Rooftop Pool', '+satisfaction & +15% room prices', 4000], ['lift', '🛗 Faster Elevator', 'guests reach rooms faster', 800]];
-    const hire = k => Math.floor(STAFF.find(s => s[0] === k)[3] * Math.pow(2.2, S.staff[k]));
-    const facCost = k => Math.floor(FAC.find(s => s[0] === k)[3] * Math.pow(3, S.fac[k]));
-    const floorCost = () => Math.floor(800 * Math.pow(2.6, S.floors - 1));
-    const satBase = () => 0.5 + S.fac.lobby * 0.06 + S.fac.pool * 0.08 + Math.min(0.15, S.staff.bell * 0.03);
-    function save() { E.save('save', S); E.submitBest(Math.floor(S.money + S.rooms.reduce((s, r) => s + (r ? LV[r.lv].cost + 150 : 0), 0) + S.floors * 500)); }
-    function roomRect(i) { const f = Math.floor(i / 3), k = i % 3; return { x: SHAFT + k * RW, y: -LOBBY - (f + 1) * FH, w: RW, h: FH, f }; }
-    function spawnGuest() { const look = { skin: pick(['#f1c27d', '#c68642', '#8d5524', '#ffdbac', '#e0ac69']), shirt: hsl(irand(0, 359), 60, 55), hair: pick(['#111', '#5b3a1c', '#d97706', '#9ca3af', '#7c2d12']), bag: hsl(irand(0, 359), 50, 40) }; guests.push({ st: 'queue', x: BWID + 30, y: -20, tx: 0, wait: 0, look, room: -1, stay: 0, sat: satBase(), patience: rand(25, 40), id: Math.random() }); }
-    function queueX(i) { return 450 + i * 50; }
-    function checkIn(g) {
-      const free = S.rooms.findIndex((r, i) => r && r.st === 'clean' && !guests.some(o => o.room === i));
-      if (free < 0) { E.toast('🛏️ No clean room available!'); E.sound('error'); return false; }
-      g.room = free; g.st = 'toLift'; E.sound('ding'); g.sat -= Math.min(0.3, g.wait / 120); S.rooms[free].st = 'reserved';
-      fx.text(g.x, g.y - 60, 'Room ' + (free + 101 + Math.floor(free / 3) * 97), '#fde047', 18); return true;
+    const ctx = E.ctx, fx = Fx(), MW = 1400, MH = 1040;
+    const S = Object.assign({ money: 60, rooms: [true, false, false, false, false, false, false], beds: 0, decor: 0, shoes: 0, rec: 0, maid: 0, bell: 0, vend: 0, stars: 3, served: 0 }, E.data('save2', {}));
+    // ---------- layout ----------
+    const ROOMS = []; for (let i = 0; i < 6; i++) ROOMS.push({ x: 40 + i * 220, y: 200, w: 210, h: 290, door: 40 + i * 220 + 105, doorY: 490, top: true });
+    ROOMS.push({ x: 1130, y: 680, w: 250, h: 300, door: 1255, doorY: 680, top: false });
+    const CLOSET = { x: 20, y: 680, w: 250, h: 300, door: 145 }, DESK = { x: 590, y: 730, w: 220, h: 40 }, DESKSPOT = { x: 700, y: 700 }, CASH = { x: 700, y: 748 };
+    const walls = [];
+    const W = (x, y, w, h) => walls.push([x, y, w, h]);
+    W(0, 160, MW, 20); W(0, 160, 20, MH - 160); W(MW - 20, 160, 20, MH - 160); W(0, MH - 20, 640, 20); W(760, MH - 20, MW - 760, 20);
+    ROOMS.forEach(r => { if (r.top) { W(r.x + r.w, r.y, 10, r.h); W(r.x, r.y + r.h - 10, r.w / 2 - 40, 10); W(r.x + r.w / 2 + 40, r.y + r.h - 10, r.w / 2 - 40, 10); } else { W(r.x - 10, r.y, 10, r.h + 40); W(r.x, r.y, r.w / 2 - 40, 10); W(r.x + r.w / 2 + 40, r.y, r.w / 2 - 40, 10); } });
+    W(CLOSET.x + CLOSET.w, CLOSET.y, 10, CLOSET.h + 40); W(CLOSET.x, CLOSET.y, CLOSET.w / 2 - 40, 10); W(CLOSET.x + CLOSET.w / 2 + 40, CLOSET.y, CLOSET.w / 2 - 40, 10);
+    walls.push([DESK.x, DESK.y, DESK.w, DESK.h]);
+    const roomWalls = i => { const r = ROOMS[i]; return r.top ? [r.x, r.y + r.h - 10, r.w, 10] : [r.x, r.y, r.w, 10]; };
+    const SHELF = [{ x: 70, y: 760, item: 'towel', e: '🧺' }, { x: 200, y: 760, item: 'food', e: '🍔' }];
+    // ---------- build pads ----------
+    const PADS = [];
+    ROOMS.forEach((r, i) => { if (i > 0) PADS.push({ id: 'room' + i, x: r.door, y: r.top ? r.doorY + 55 : r.doorY - 55, cost: 120 * Math.pow(1.9, i - 1), label: 'Room ' + (101 + i), ok: () => !S.rooms[i], buy: () => { S.rooms[i] = true; } }); });
+    const UP = [['rec', '💁 Receptionist', 500, 1], ['maid', '🧹 Housekeeper', 400, 3], ['bell', '🛎️ Bellhop', 700, 2], ['beds', '🛏️ Luxury Beds', 350, 4], ['decor', '🪴 Lobby Décor', 300, 4], ['shoes', '👟 Fast Shoes', 200, 3], ['vend', '🥤 Vending Machine', 260, 1]];
+    UP.forEach(([k, n, c, max], j) => PADS.push({ id: k, x: 380 + (j % 4) * 210, y: 880 + Math.floor(j / 4) * 80 - (j >= 4 ? 0 : 0), cost: () => c * Math.pow(2.2, S[k]), label: n, ok: () => S[k] < max, buy: () => { S[k]++; } }));
+    PADS.forEach(p => { if (typeof p.cost === 'number') { const c = p.cost; p.cost = () => c; } p.paid = 0; });
+    // reposition upgrade pads in two rows inside the lobby
+    PADS.filter(p => !p.id.startsWith('room')).forEach((p, j) => { p.x = 360 + (j % 4) * 200; p.y = j < 4 ? 895 : 970; if (j >= 4) p.x = 460 + (j - 4) * 200; });
+    // ---------- actors ----------
+    const me = { x: 700, y: 640, vx: 0, vy: 0, carry: null, face: 1, step: 0 };
+    let guests = [], cash = [], spawnT = 3, t = 0, saveT = 0, roomState = ROOMS.map(() => ({ st: 'clean', guest: null, clean: 0, trash: [] })), checkT = 0, staff = [], msg = '', msgT = 0, vendT = 0;
+    const rs = i => roomState[i];
+    function mkStaff() { staff = []; for (let i = 0; i < S.maid; i++) staff.push({ kind: 'maid', x: 600 + i * 40, y: 620, task: null, t: 0, col: '#0ea5e9' }); for (let i = 0; i < S.bell; i++) staff.push({ kind: 'bell', x: 800 + i * 40, y: 620, task: null, t: 0, carry: null, col: '#dc2626' }); }
+    mkStaff();
+    function save() { E.save('save2', S); E.submitBest(Math.floor(S.money + S.rooms.filter(Boolean).length * 300 + (S.rec + S.maid + S.bell) * 400)); }
+    function collide(a, r) { for (const w of walls) { const cx = clamp(a.x, w[0], w[0] + w[2]), cy = clamp(a.y, w[1], w[1] + w[3]), dx = a.x - cx, dy = a.y - cy, d = Math.hypot(dx, dy); if (d < r && d > 0) { a.x = cx + dx / d * r; a.y = cy + dy / d * r; } } ROOMS.forEach((rm, i) => { if (S.rooms[i]) return; const w = roomWalls(i); if (rm.top) { if (a.y < w[1] + 10 + r && a.x > w[0] && a.x < w[0] + w[2]) a.y = w[1] + 10 + r; } else if (a.y > w[1] - r && a.x > w[0] && a.x < w[0] + w[2]) a.y = w[1] - r; }); a.x = clamp(a.x, 30, MW - 30); a.y = clamp(a.y, 190, MH - 10); }
+    const inRoom = (a, i) => { const r = ROOMS[i]; return a.x > r.x && a.x < r.x + r.w && a.y > r.y && a.y < r.y + r.h; };
+    const freeRoom = () => ROOMS.findIndex((r, i) => S.rooms[i] && rs(i).st === 'clean' && !rs(i).guest);
+    // guest path helpers
+    const queuePos = i => ({ x: 700, y: 830 + i * 0 + 0, qx: 700 + (i % 2 ? 1 : -1) * Math.ceil(i / 2) * 50 });
+    function route(g, pts) { g.path = pts; }
+    function spawnGuest() {
+      const look = { skin: pick(['#f1c27d', '#c68642', '#8d5524', '#ffdbac', '#e0ac69']), shirt: hsl(irand(0, 359), 60, 55), hair: pick(['#111', '#5b3a1c', '#d97706', '#9ca3af', '#7c2d12']), bag: hsl(irand(0, 359), 50, 40) };
+      guests.push({ x: 700, y: MH + 20, look, st: 'queue', path: [], wait: 0, patience: 45, room: -1, stay: 0, req: null, reqT: 0, sat: 0.7 + S.decor * 0.05 });
     }
-    function payout(g) {
-      const r = S.rooms[g.room], lvl = r ? LV[r.lv] : LV[0], mult = 1 + S.fac.pool * 0.15, sat = clamp(g.sat + lvl.sat, 0, 1);
-      const pay = Math.round(lvl.price * mult * (0.8 + sat * 0.6) + S.fac.rest * 15); S.money += pay; S.earned += pay; S.served++;
-      const stars = clamp(Math.round(1 + sat * 4), 1, 5); ratings.push(stars); if (ratings.length > 20) ratings.shift(); S.rating = ratings.reduce((a, b) => a + b, 0) / ratings.length;
-      fx.text(g.x, g.y - 70, '+$' + pay + '  ' + '⭐'.repeat(stars), '#86efac', 18); E.sound('coin');
-    }
-    function roomTap(i) {
-      const r = S.rooms[i];
-      if (!r) { const c = 300 + Math.floor(i / 3) * 150; confirmBox('🔨 Build a room here?', 'Cost $' + fmtBig(c), () => { if (S.money < c) return E.sound('error'); S.money -= c; S.rooms[i] = { lv: 0, st: 'clean' }; E.sound('buy'); save(); }); return; }
-      if (r.st === 'dirty') { if (!cleaning[i]) { cleaning[i] = 0.01; E.sound('swish'); } return; }
-      if (r.st === 'clean' && r.lv < LV.length - 1) { const c = LV[r.lv + 1].cost; confirmBox('✨ Upgrade to ' + LV[r.lv + 1].n + '?', '$' + LV[r.lv].price + ' → $' + LV[r.lv + 1].price + ' per night • cost $' + fmtBig(c), () => { if (S.money < c) return E.sound('error'); S.money -= c; r.lv++; E.sound('buy'); save(); }); }
-    }
-    function confirmBox(title, sub, ok) { const d = document.createElement('div'); d.innerHTML = `<p style="color:#e2e8f0;margin-bottom:12px">${esc(sub)}</p>`; const b = document.createElement('button'); b.className = 'btn primary'; b.style.width = '100%'; b.textContent = 'Confirm'; b.onclick = () => { ok(); E.panel.close(); }; d.appendChild(b); E.panel.open(title, d); }
-    function openStaff() { const g = document.createElement('div'); g.innerHTML = `<div class="shopres"><span>💵 $${fmtBig(S.money)}</span></div>`; const grid = document.createElement('div'); grid.className = 'shopgrid'; STAFF.forEach(([k, n, d]) => { const c = hire(k), el = document.createElement('div'); el.className = 'up'; el.innerHTML = `<h4>${n}<span class="lv">${S.staff[k]} hired</span></h4><small>${d}</small>`; const b = document.createElement('button'); b.textContent = 'Hire $' + fmtBig(c); b.disabled = S.money < c || S.staff[k] >= 6; b.onclick = () => { if (S.money < c) return; S.money -= c; S.staff[k]++; E.sound('buy'); save(); openStaff(); }; el.appendChild(b); grid.appendChild(el); }); g.appendChild(grid); E.panel.open('👥 Hire Staff', g); }
-    function openUp() { const g = document.createElement('div'); g.innerHTML = `<div class="shopres"><span>💵 $${fmtBig(S.money)}</span><span>⭐ ${S.rating.toFixed(1)}</span></div>`; const grid = document.createElement('div'); grid.className = 'shopgrid';
-      const fl = document.createElement('div'); fl.className = 'up'; fl.innerHTML = `<h4>🏗️ Build New Floor<span class="lv">${S.floors} floors</span></h4><small>Adds 3 room slots</small>`; const fb = document.createElement('button'); fb.textContent = '$' + fmtBig(floorCost()); fb.disabled = S.money < floorCost() || S.floors >= 10; fb.onclick = () => { if (S.money < floorCost()) return; S.money -= floorCost(); S.floors++; S.rooms.push(null, null, null); E.sound('buy'); save(); openUp(); }; fl.appendChild(fb); grid.appendChild(fl);
-      FAC.forEach(([k, n, d]) => { const c = facCost(k), el = document.createElement('div'); el.className = 'up'; el.innerHTML = `<h4>${n}<span class="lv">Lv ${S.fac[k]}</span></h4><small>${d}</small>`; const b = document.createElement('button'); b.textContent = S.fac[k] >= 5 ? 'MAX' : '$' + fmtBig(c); b.disabled = S.money < c || S.fac[k] >= 5; b.onclick = () => { if (S.money < c) return; S.money -= c; S.fac[k]++; E.sound('buy'); save(); openUp(); }; el.appendChild(b); grid.appendChild(el); });
-      g.appendChild(grid); E.panel.open('⭐ Hotel Upgrades', g); }
-    const bar = document.createElement('div'); bar.style.cssText = 'position:absolute;left:50%;transform:translateX(-50%);bottom:max(14px,env(safe-area-inset-bottom));display:flex;gap:8px';
-    [['👥 Staff', openStaff], ['⭐ Upgrades', openUp]].forEach(([l, f]) => { const b = document.createElement('button'); b.className = 'btn primary'; b.style.cssText = 'padding:10px 16px;font-size:.95rem'; b.textContent = l; b.onclick = e => { e.stopPropagation(); f(); }; bar.appendChild(b); });
-    E.layer.appendChild(bar);
-    function drawPerson(x, y, lk, s, walk, extra) {
-      ctx.save(); ctx.translate(x, y); ctx.scale(s, s); const st = walk ? Math.sin(t * 10 + x) * 4 : 0;
-      ctx.fillStyle = '#1f2937'; ctx.fillRect(-7, -16 + (st > 0 ? -2 : 0), 6, 16); ctx.fillRect(1, -16 + (st < 0 ? -2 : 0), 6, 16);
-      ctx.fillStyle = lk.shirt; rr(ctx, -11, -40, 22, 26, 7); ctx.fill(); circle(ctx, 0, -50, 10, lk.skin); ctx.fillStyle = lk.hair; ctx.beginPath(); ctx.arc(0, -53, 10.5, Math.PI, 0); ctx.fill();
-      if (extra === 'bag') { ctx.fillStyle = lk.bag; rr(ctx, 10, -22, 14, 18, 3); ctx.fill(); ctx.strokeStyle = '#111'; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(13, -22); ctx.lineTo(13, -27); ctx.lineTo(21, -27); ctx.lineTo(21, -22); ctx.stroke(); }
-      if (extra === 'maid') { ctx.fillStyle = '#fff'; ctx.fillRect(-11, -30, 22, 8); ctx.fillStyle = '#60a5fa'; rr(ctx, 14, -26, 18, 22, 3); ctx.fill(); }
-      ctx.restore();
-    }
-    function drawRoom(i) {
-      const R = roomRect(i), r = S.rooms[i], x = R.x, y = R.y;
-      ctx.fillStyle = r ? ['#fde68a', '#bae6fd', '#e9d5ff', '#fecaca'][r.lv] : 'rgba(255,255,255,.08)'; ctx.fillRect(x + 4, y + 4, R.w - 8, R.h - 8);
-      if (!r) { ctx.strokeStyle = 'rgba(255,255,255,.35)'; ctx.setLineDash([8, 6]); ctx.lineWidth = 2; ctx.strokeRect(x + 10, y + 10, R.w - 20, R.h - 20); ctx.setLineDash([]); label(ctx, '+ Build $' + fmtBig(300 + Math.floor(i / 3) * 150), x + R.w / 2, y + R.h / 2, 15, '#e2e8f0'); ui.zone('r' + i, x, y, R.w, R.h); return; }
-      // wallpaper stripes
-      ctx.fillStyle = 'rgba(0,0,0,.04)'; for (let k = 0; k < R.w; k += 22) ctx.fillRect(x + k, y + 4, 11, R.h - 8);
-      // furniture by level
-      const fy = y + R.h - 6; ctx.fillStyle = '#92400e'; ctx.fillRect(x + 4, fy - 6, R.w - 8, 6);
-      ctx.fillStyle = ['#fff', '#f8fafc', '#fdf4ff', '#fef9c3'][r.lv]; rr(ctx, x + 30, fy - 34, 110, 26, 6); ctx.fill(); ctx.fillStyle = ['#ef4444', '#3b82f6', '#a855f7', '#f59e0b'][r.lv]; rr(ctx, x + 60, fy - 32, 80, 22, 6); ctx.fill(); ctx.fillStyle = '#fff'; rr(ctx, x + 34, fy - 44, 26, 14, 5); ctx.fill(); ctx.fillStyle = '#7c2d12'; ctx.fillRect(x + 26, fy - 52, 6, 46);
-      ctx.fillStyle = '#78350f'; ctx.fillRect(x + 150, fy - 30, 30, 24); circle(ctx, x + 165, fy - 44, 8, '#fde047');
-      if (r.lv >= 1) { ctx.fillStyle = '#111827'; rr(ctx, x + 196, fy - 80, 50, 32, 4); ctx.fill(); ctx.fillStyle = '#38bdf8'; ctx.fillRect(x + 200, fy - 76, 42, 24); }
-      if (r.lv >= 2) { ctx.fillStyle = '#166534'; circle(ctx, x + R.w - 22, fy - 40, 14); ctx.fill(); ctx.fillStyle = '#92400e'; ctx.fillRect(x + R.w - 30, fy - 26, 16, 20); }
-      if (r.lv >= 3) { for (let k = 0; k < 3; k++) { ctx.fillStyle = '#fde047'; star(ctx, x + 40 + k * 20, y + 22, 6, 2.5, 5); ctx.fill(); } }
-      // window
-      ctx.fillStyle = '#7dd3fc'; ctx.fillRect(x + 90, y + 18, 60, 40); ctx.strokeStyle = '#fff'; ctx.lineWidth = 3; ctx.strokeRect(x + 90, y + 18, 60, 40);
-      if (r.st === 'dirty') { ctx.fillStyle = 'rgba(120,80,40,.35)'; ctx.fillRect(x + 4, y + 4, R.w - 8, R.h - 8); for (let k = 0; k < 5; k++) circle(ctx, x + 40 + k * 40, fy - 8, 6, 'rgba(90,60,30,.7)'); for (let k = 0; k < 3; k++) { const fxp = x + 60 + k * 50 + Math.sin(t * 6 + k) * 10, fyp = y + 50 + Math.cos(t * 7 + k) * 8; circle(ctx, fxp, fyp, 2, '#111'); } label(ctx, cleaning[i] ? '🧹 ' + Math.round(cleaning[i] * 100) + '%' : '🧹 TAP TO CLEAN', x + R.w / 2, y + 28, 14, '#fff'); }
-      if (cleaning[i]) { ctx.fillStyle = 'rgba(0,0,0,.4)'; ctx.fillRect(x + 20, y + R.h - 20, R.w - 40, 8); ctx.fillStyle = '#4ade80'; ctx.fillRect(x + 20, y + R.h - 20, (R.w - 40) * cleaning[i], 8); }
-      if (r.st === 'occupied') { ctx.fillStyle = 'rgba(15,23,42,.3)'; ctx.fillRect(x + 4, y + 4, R.w - 8, R.h - 8); txt(ctx, '💤', x + 70, fy - 50, 22); }
-      ctx.fillStyle = '#7c2d12'; rr(ctx, x + R.w - 46, y + 8, 40, 18, 4); ctx.fill(); txt(ctx, String(101 + i + Math.floor(i / 3) * 97), x + R.w - 26, y + 18, 11, '#fde68a', 'center', 800);
-      txt(ctx, LV[r.lv].n, x + 10, y + R.h - 64, 11, 'rgba(0,0,0,.5)', 'left', 800);
-      ui.zone('r' + i, x, y, R.w, R.h);
-    }
+    function checkIn(g) { const i = freeRoom(); if (i < 0) return false; g.room = i; g.st = 'toRoom'; rs(i).guest = g; const r = ROOMS[i]; route(g, [{ x: g.x, y: 600 }, { x: r.door, y: 600 }, { x: r.door, y: r.top ? r.y + r.h - 60 : r.y + 60 }, { x: r.x + r.w / 2 + rand(-30, 30), y: r.y + r.h / 2 }]); g.sat -= Math.min(0.3, g.wait / 120); E.sound('ding'); fx.text(g.x, g.y - 60, 'Room ' + (101 + i), '#fde047', 18); return true; }
+    function checkout(g) { const i = g.room, r = ROOMS[i], price = Math.round((40 + i * 12) * (1 + S.beds * 0.35) * (0.7 + clamp(g.sat, 0, 1) * 0.6)); g.st = 'leave'; rs(i).guest = null; rs(i).st = 'dirty'; rs(i).trash = [0, 1, 2].map(() => ({ x: r.x + rand(30, r.w - 30), y: r.y + rand(40, r.h - 40), e: pick(['🧦', '🍕', '🥤', '📰', '🍌']) })); route(g, [{ x: r.door, y: r.top ? r.doorY - 20 : r.doorY + 20 }, { x: r.door, y: 600 }, { x: 700, y: 600 }, { x: 640, y: 800 }, { x: 700, y: MH + 40 }]); cash.push({ x: CASH.x + rand(-40, 40), y: CASH.y + rand(-4, 4), v: price }); S.served++; const st = clamp(Math.round(1 + g.sat * 4), 1, 5); S.stars = S.stars * 0.85 + st * 0.15; fx.text(g.x, g.y - 70, '⭐'.repeat(st), '#fde047', 18); }
+    function walkPath(a, sp, dt) { if (!a.path || !a.path.length) return true; const p = a.path[0], dx = p.x - a.x, dy = p.y - a.y, d = Math.hypot(dx, dy); if (d < 4) { a.path.shift(); return !a.path.length; } a.x += dx / d * Math.min(d, sp * dt); a.y += dy / d * Math.min(d, sp * dt); a.face = dx > 0 ? 1 : -1; a.step = (a.step || 0) + dt * 10; return false; }
+    if (E.touch) {}
     return {
       update(dt) {
-        t += dt; fx.update(dt);
-        dayT += dt; if (dayT > 60) { dayT = 0; S.day++; const wages = (S.staff.rec * 25 + S.staff.maid * 20 + S.staff.bell * 30); S.money -= wages; if (wages) E.toast('📅 Day ' + S.day + ' – staff wages $' + wages); save(); }
-        const rate = 7 - Math.min(5, S.rating - 2.5) * 0.9 - S.floors * 0.25; queueT -= dt; if (queueT <= 0) { queueT = rand(rate * 0.7, rate * 1.2); if (guests.filter(g => g.st === 'queue').length < 6) spawnGuest(); }
-        const sp = 110 * (1 + S.staff.bell * 0.3), lift = 160 * (1 + S.fac.lift * 0.4);
-        let qi = 0;
+        t += dt; fx.update(dt); msgT -= dt;
+        // player
+        const d = E.dir(), sp = 260 * (1 + S.shoes * 0.15);
+        me.vx += (d.x * d.mag * sp - me.vx) * Math.min(1, dt * 12); me.vy += (d.y * d.mag * sp - me.vy) * Math.min(1, dt * 12);
+        me.x += me.vx * dt; me.y += me.vy * dt; collide(me, 18); if (Math.abs(me.vx) > 10) me.face = me.vx > 0 ? 1 : -1; if (Math.hypot(me.vx, me.vy) > 20) me.step += dt * 12;
+        // guests
+        spawnT -= dt; const nRooms = S.rooms.filter(Boolean).length;
+        if (spawnT <= 0) { spawnT = Math.max(3, 11 - nRooms * 0.9 - (S.stars - 3) * 1.2); if (guests.filter(g => g.st === 'queue').length < 6) spawnGuest(); }
+        const q = guests.filter(g => g.st === 'queue');
+        q.forEach((g, i) => { const tx = 700 + (i % 2 ? 1 : -1) * Math.ceil(i / 2) * 55, ty = 840; g.x += clamp(tx - g.x, -150 * dt, 150 * dt); g.y += clamp(ty - g.y, -150 * dt, 150 * dt); g.wait += dt; if (g.wait > g.patience) { g.st = 'leave'; route(g, [{ x: 700, y: MH + 40 }]); S.stars = Math.max(1, S.stars - 0.2); fx.text(g.x, g.y - 60, '😤', '#f87171', 26); E.sound('bad'); } });
+        // check-in at desk (player or receptionist)
+        const atDesk = dist(me.x, me.y, DESKSPOT.x, DESKSPOT.y) < 60;
+        if ((atDesk || S.rec > 0) && q.length && freeRoom() >= 0) { checkT += dt * (atDesk ? 1.6 : 0.6); if (checkT >= 1) { checkT = 0; checkIn(q[0]); } } else checkT = 0;
         for (const g of guests) {
-          if (g.st === 'queue') { g.tx = queueX(qi++); g.x += clamp(g.tx - g.x, -sp * dt, sp * dt); g.y = -20; g.wait += dt; if (g.wait > g.patience) { g.st = 'leave'; g.sat = 0; ratings.push(1); if (ratings.length > 20) ratings.shift(); S.rating = ratings.reduce((a, b) => a + b, 0) / ratings.length; fx.text(g.x, g.y - 60, '😤 Too slow!', '#f87171', 18); E.sound('bad'); } }
-          else if (g.st === 'toLift') { g.x += clamp(SHAFT / 2 - g.x, -sp * 1.4 * dt, sp * 1.4 * dt); if (Math.abs(g.x - SHAFT / 2) < 2) g.st = 'up'; }
-          else if (g.st === 'up') { const R = roomRect(g.room), ty = R.y + R.h - 8; g.y += clamp(ty - g.y, -lift * dt, lift * dt); if (Math.abs(g.y - ty) < 1) g.st = 'toRoom'; }
-          else if (g.st === 'toRoom') { const R = roomRect(g.room), tx = R.x + R.w * 0.5; g.x += clamp(tx - g.x, -sp * dt, sp * dt); if (Math.abs(g.x - tx) < 2) { g.st = 'stay'; g.stay = rand(14, 22); S.rooms[g.room].st = 'occupied'; } }
-          else if (g.st === 'stay') { g.stay -= dt; if (g.stay <= 0) { payout(g); S.rooms[g.room].st = 'dirty'; g.st = 'outLift'; } }
-          else if (g.st === 'outLift') { g.x += clamp(SHAFT / 2 - g.x, -sp * dt, sp * dt); if (Math.abs(g.x - SHAFT / 2) < 2) g.st = 'down'; }
-          else if (g.st === 'down') { g.y += clamp(-8 - g.y, -lift * dt, lift * dt); if (Math.abs(g.y + 8) < 1) g.st = 'leave'; }
-          else if (g.st === 'leave') { g.y = -20; g.x += sp * dt; if (g.x > BWID + 60) g.gone = true; }
+          if (g.st === 'toRoom') { if (walkPath(g, 140, dt)) { g.st = 'stay'; g.stay = rand(22, 34); } }
+          else if (g.st === 'stay') { g.stay -= dt; if (!g.req && Math.random() < dt * 0.04) { g.req = pick(['towel', 'food']); g.reqT = 25; E.sound('ding'); } if (g.req) { g.reqT -= dt; if (g.reqT <= 0) { g.req = null; g.sat -= 0.25; } } if (g.stay <= 0) checkout(g); }
+          else if (g.st === 'leave') { if (walkPath(g, 150, dt)) g.gone = true; }
         }
         guests = guests.filter(g => !g.gone);
-        // receptionist
-        if (S.staff.rec > 0) { recT -= dt; if (recT <= 0) { recT = 4 / S.staff.rec; const g = guests.find(q => q.st === 'queue'); if (g && S.rooms.some((r, i) => r && r.st === 'clean' && !guests.some(o => o.room === i))) checkIn(g); } }
-        // housekeepers
-        if (S.staff.maid > 0) { maidT -= dt; if (maidT <= 0) { maidT = 1; let n = S.staff.maid; S.rooms.forEach((r, i) => { if (n > 0 && r && r.st === 'dirty' && !cleaning[i]) { cleaning[i] = 0.01; n--; } }); } }
-        for (const k in cleaning) { cleaning[k] += dt / 3; if (cleaning[k] >= 1) { delete cleaning[k]; const r = S.rooms[k]; if (r) { r.st = 'clean'; fx.burst(roomRect(+k).x + RW / 2, roomRect(+k).y + FH / 2, 14, { col: ['#fff', '#bae6fd'], spd: 140, shape: 'star' }); E.sound('ding', 100); } } }
-        saveT += dt; if (saveT > 6) { saveT = 0; save(); }
+        // supply closet + deliveries
+        for (const s of SHELF) if (!me.carry && dist(me.x, me.y, s.x, s.y + 30) < 50) { me.carry = s.item; E.sound('pop'); fx.text(me.x, me.y - 70, 'Got ' + s.e, '#fff', 18); }
+        if (me.carry) for (const g of guests) if (g.st === 'stay' && g.req === me.carry && inRoom(me, g.room)) { g.req = null; g.sat += 0.2; me.carry = null; const tip = 15 + S.beds * 5; cash.push({ x: me.x, y: me.y + 30, v: tip }); E.sound('coin'); fx.text(me.x, me.y - 70, 'Delivered! +tip', '#86efac', 18); }
+        // cleaning (player stands in dirty room)
+        ROOMS.forEach((r, i) => { const st = rs(i); if (st.st !== 'dirty') return; if (inRoom(me, i)) { st.clean += dt / 2.2; if (Math.random() < dt * 8) fx.burst(me.x, me.y, 2, { col: ['#bae6fd', '#fff'], spd: 80, shape: 'star' }); } if (st.clean >= 1) { st.st = 'clean'; st.clean = 0; st.trash = []; E.sound('ding'); fx.burst(r.x + r.w / 2, r.y + r.h / 2, 30, { col: ['#fff', '#bae6fd', '#fde047'], spd: 200, shape: 'star' }); } });
+        // staff AI
+        for (const s of staff) {
+          s.step = (s.step || 0);
+          if (s.kind === 'maid') { if (!s.task) { const i = ROOMS.findIndex((r, k) => rs(k).st === 'dirty' && !staff.some(o => o !== s && o.task === k)); if (i >= 0) { s.task = i; const r = ROOMS[i]; route(s, [{ x: s.x, y: 600 }, { x: r.door, y: 600 }, { x: r.door, y: r.top ? r.y + r.h - 60 : r.y + 60 }, { x: r.x + r.w / 2, y: r.y + r.h / 2 }]); } } else if (walkPath(s, 130, dt)) { const st = rs(s.task); if (st.st === 'dirty') { st.clean += dt / 4.5; } else { s.task = null; route(s, [{ x: s.x, y: 600 }]); } } }
+          else { if (!s.task) { const g = guests.find(g => g.st === 'stay' && g.req && !staff.some(o => o.task === g)); if (g) { s.task = g; const sh = SHELF.find(x => x.item === g.req); route(s, [{ x: s.x, y: 600 }, { x: 145, y: 600 }, { x: sh.x, y: sh.y + 30 }]); s.phase = 0; } } else { const g = s.task; if (!guests.includes(g) || !g.req) { s.task = null; s.carry = null; route(s, [{ x: s.x, y: 600 }]); continue; } if (walkPath(s, 150, dt)) { if (s.phase === 0) { s.phase = 1; s.carry = g.req; const r = ROOMS[g.room]; route(s, [{ x: 145, y: 600 }, { x: r.door, y: 600 }, { x: r.door, y: r.top ? r.y + r.h - 60 : r.y + 60 }]); } else { g.req = null; g.sat += 0.15; s.carry = null; s.task = null; cash.push({ x: CASH.x + rand(-40, 40), y: CASH.y, v: 8 }); } } } }
+        }
+        // cash pickup
+        for (let i = cash.length - 1; i >= 0; i--) { const c = cash[i]; if (dist(c.x, c.y, me.x, me.y) < 58) { S.money += c.v; cash.splice(i, 1); E.sound('coin', 30); fx.text(c.x, c.y - 30, '+$' + c.v, '#86efac', 18); } }
+        if (S.vend) { vendT += dt; if (vendT > 6) { vendT = 0; cash.push({ x: 1000 + rand(-15, 15), y: 760, v: 6 * S.vend }); } }
+        // build pads
+        for (const p of PADS) { if (!p.ok()) continue; if (dist(me.x, me.y, p.x, p.y) < 42 && S.money > 0) { const need = p.cost() - p.paid, pay = Math.min(need, S.money, Math.max(5, p.cost() * 1.4 * dt)); p.paid += pay; S.money -= pay; if (Math.random() < 0.3) E.sound('tick', 60); if (p.paid >= p.cost() - 0.01) { p.paid = 0; p.buy(); E.sound('buy'); E.sound('rare'); msg = '✅ ' + p.label + ' unlocked!'; msgT = 2; fx.burst(p.x, p.y, 40, { col: ['#86efac', '#fde047', '#fff'], spd: 260, shape: 'star' }); mkStaff(); save(); } } }
+        saveT += dt; if (saveT > 5) { saveT = 0; save(); }
+        E.follow(me.x, me.y, Math.min(1.05, Math.min(E.W, E.H) / 720), dt);
       },
       draw() {
-        const W = E.W, H = E.H; ui.clear();
-        const s = Math.min(W / (BWID + 80), 1.25), topY = -LOBBY - S.floors * FH - 90, maxCam = Math.max(0, -topY * s - H + 120);
-        camY = clamp(camY, 0, maxCam);
-        ctx.fillStyle = lgrad(ctx, 0, 0, 0, H, ['#38bdf8', '#e0f2fe']); ctx.fillRect(0, 0, W, H);
-        for (let i = 0; i < 5; i++) { const cx = ((i * 260 + t * 10) % (W + 200)) - 100, cy = 60 + i * 50 + camY * 0.2; ctx.fillStyle = 'rgba(255,255,255,.8)'; ctx.beginPath(); ctx.arc(cx, cy, 20, 0, TAU); ctx.arc(cx + 24, cy - 8, 26, 0, TAU); ctx.arc(cx + 52, cy, 18, 0, TAU); ctx.fill(); }
-        const ox = (W - BWID * s) / 2, oy = H - 70 + camY;
-        ctx.save(); ctx.translate(ox, oy); ctx.scale(s, s);
-        ctx.fillStyle = '#65a30d'; ctx.fillRect(-2000, 0, 5000, 400); ctx.fillStyle = '#9ca3af'; ctx.fillRect(-2000, 0, 5000, 20);
-        // building shell
-        ctx.fillStyle = '#7c2d12'; ctx.fillRect(-12, topY + 60, BWID + 24, -topY - 60);
-        ctx.fillStyle = '#f5f5f4'; ctx.fillRect(0, -LOBBY - S.floors * FH, BWID, S.floors * FH + LOBBY);
-        // roof + sign + pool
-        ctx.fillStyle = '#44403c'; ctx.fillRect(-20, -LOBBY - S.floors * FH - 16, BWID + 40, 16);
-        if (S.fac.pool) { ctx.fillStyle = '#38bdf8'; rr(ctx, BWID - 300, -LOBBY - S.floors * FH - 40, 260, 26, 8); ctx.fill(); txt(ctx, '🏊', BWID - 330, -LOBBY - S.floors * FH - 28, 20); }
-        rr(ctx, BWID / 2 - 150, -LOBBY - S.floors * FH - 76, 300, 50, 10); ctx.fillStyle = '#7f1d1d'; ctx.fill(); txt(ctx, 'THE IO GRAND HOTEL', BWID / 2, -LOBBY - S.floors * FH - 51, 22, '#fde68a', 'center', 900);
-        for (let k = 0; k < Math.round(S.rating); k++) { star(ctx, BWID / 2 - 48 + k * 24, -LOBBY - S.floors * FH - 92, 9, 4, 5); ctx.fillStyle = '#facc15'; ctx.fill(); }
-        // elevator shaft
-        ctx.fillStyle = '#334155'; ctx.fillRect(0, -LOBBY - S.floors * FH, SHAFT, S.floors * FH + LOBBY); ctx.fillStyle = '#64748b'; ctx.fillRect(SHAFT / 2 - 3, -LOBBY - S.floors * FH, 6, S.floors * FH + LOBBY);
+        const Wd = E.W, Hd = E.H; ctx.fillStyle = '#365314'; ctx.fillRect(0, 0, Wd, Hd);
+        E.beginWorld();
+        // outside
+        ctx.fillStyle = '#4d7c0f'; ctx.fillRect(-600, -600, MW + 1200, MH + 1200); ctx.fillStyle = '#a8a29e'; ctx.fillRect(600, MH, 200, 600);
+        for (let i = 0; i < 14; i++) { circle(ctx, -80 + (i % 2) * 40, 200 + i * 70, 30, '#166534'); circle(ctx, MW + 80 - (i % 2) * 40, 200 + i * 70, 30, '#166534'); }
         // floors
-        for (let f = 0; f < S.floors; f++) { ctx.fillStyle = '#a8a29e'; ctx.fillRect(0, -LOBBY - f * FH - 4, BWID, 6); }
-        S.rooms.forEach((r, i) => drawRoom(i));
-        // lobby
-        ctx.fillStyle = S.fac.lobby ? '#fef3c7' : '#e7e5e4'; ctx.fillRect(SHAFT, -LOBBY, BWID - SHAFT, LOBBY);
-        ctx.fillStyle = S.fac.lobby >= 2 ? '#991b1b' : '#a8a29e'; ctx.fillRect(SHAFT, -10, BWID - SHAFT, 10);
-        ctx.fillStyle = '#7c2d12'; rr(ctx, 200, -70, 200, 60, 8); ctx.fill(); ctx.fillStyle = '#92400e'; ctx.fillRect(196, -74, 208, 10); txt(ctx, 'RECEPTION', 300, -40, 14, '#fde68a', 'center', 900); circle(ctx, 380, -78, 6, '#fbbf24');
-        if (S.staff.rec) drawPerson(300, -72, { skin: '#f1c27d', shirt: '#1e3a8a', hair: '#111' }, 1, false);
-        for (let k = 0; k < S.fac.lobby; k++) { ctx.fillStyle = '#166534'; circle(ctx, 460 + k * 70, -50, 16); ctx.fill(); ctx.fillStyle = '#92400e'; ctx.fillRect(452 + k * 70, -36, 16, 26); }
-        if (S.fac.lobby >= 1) { for (let k = 0; k < 2; k++) { const cx = 300 + k * 300; ctx.strokeStyle = '#a16207'; ctx.beginPath(); ctx.moveTo(cx, -LOBBY + 4); ctx.lineTo(cx, -LOBBY + 26); ctx.stroke(); ctx.drawImage(E.glow(45), cx - 26, -LOBBY + 6, 52, 52); circle(ctx, cx, -LOBBY + 32, 9, '#fde047'); } }
-        if (S.fac.rest) { ctx.fillStyle = '#fff'; rr(ctx, BWID - 250, -LOBBY + 20, 220, 60, 8); ctx.fill(); txt(ctx, '🍽️ RESTAURANT', BWID - 140, -LOBBY + 50, 16, '#7c2d12', 'center', 900); }
-        ctx.fillStyle = '#0f172a'; ctx.fillRect(BWID - 6, -110, 12, 110);
-        // elevator car(s)
-        for (const g of guests) if (g.st === 'up' || g.st === 'down') { ctx.fillStyle = '#facc15'; rr(ctx, 10, g.y - 74, SHAFT - 20, 78, 6); ctx.fill(); ctx.fillStyle = 'rgba(0,0,0,.2)'; ctx.fillRect(14, g.y - 70, SHAFT - 28, 70); }
-        // maids
-        for (let k = 0; k < S.staff.maid; k++) { const ci = Object.keys(cleaning)[k]; if (ci !== undefined) { const R = roomRect(+ci); drawPerson(R.x + R.w * 0.7, R.y + R.h - 8, { skin: '#c68642', shirt: '#0ea5e9', hair: '#111' }, 0.9, true, 'maid'); } }
-        // guests
-        for (const g of guests) {
-          drawPerson(g.x, g.y, g.look, 1, g.st !== 'stay' && g.st !== 'queue', g.st === 'queue' || g.st === 'toLift' || g.st === 'leave' ? 'bag' : null);
-          if (g.st === 'stay') continue;
-          if (g.st === 'queue') { const p = g.wait / g.patience; ctx.fillStyle = 'rgba(0,0,0,.4)'; ctx.fillRect(g.x - 16, g.y - 78, 32, 5); ctx.fillStyle = p < 0.5 ? '#4ade80' : p < 0.8 ? '#facc15' : '#ef4444'; ctx.fillRect(g.x - 16, g.y - 78, 32 * (1 - p), 5); txt(ctx, p < 0.5 ? '🙂' : p < 0.8 ? '😐' : '😠', g.x, g.y - 92, 16); ui.zone('g' + guests.indexOf(g), g.x - 22, g.y - 100, 44, 100); }
-        }
-        fx.draw(ctx);
-        ctx.restore();
-        // map zones to screen coords
-        const zs = ui; // zones are in world coords; we convert pointer instead
-        // HUD
-        rr(ctx, W / 2 - 190, 10, 380, 56, 16); ctx.fillStyle = 'rgba(15,23,42,.75)'; ctx.fill();
-        label(ctx, '$' + fmtBig(S.money), W / 2 - 90, 38, 24, '#86efac'); label(ctx, '⭐ ' + S.rating.toFixed(1), W / 2 + 30, 38, 20, '#fde047'); label(ctx, 'Day ' + S.day, W / 2 + 130, 38, 18, '#e2e8f0');
-        const waiting = guests.filter(g => g.st === 'queue').length; if (waiting) label(ctx, '🛎️ ' + waiting + ' guest' + (waiting > 1 ? 's' : '') + ' waiting – tap them to check in!', W / 2, 86, 15, '#fff');
-        this._xf = { ox, oy, s };
+        ctx.fillStyle = '#e7e5e4'; ctx.fillRect(0, 160, MW, MH - 160);
+        ctx.fillStyle = '#7f1d1d'; ctx.fillRect(20, 500, MW - 40, 160); ctx.fillStyle = 'rgba(253,224,71,.25)'; for (let x = 40; x < MW - 40; x += 80) ctx.fillRect(x, 575, 40, 6);
+        for (let x = 280; x < 1120; x += 60) for (let y = 660; y < MH - 20; y += 60) { ctx.fillStyle = ((x + y) / 60) % 2 ? '#f5f5f4' : '#e7e5e4'; ctx.fillRect(x, y, 60, 60); }
+        if (S.decor) { ctx.fillStyle = 'rgba(185,28,28,.85)'; rr(ctx, 560, 820, 280, 120, 20); ctx.fill(); ctx.strokeStyle = '#fde047'; ctx.lineWidth = 3; rr(ctx, 570, 830, 260, 100, 16); ctx.stroke(); }
+        // rooms
+        ROOMS.forEach((r, i) => {
+          const open = S.rooms[i], st = rs(i);
+          ctx.fillStyle = open ? '#d6a46a' : '#78716c'; ctx.fillRect(r.x, r.y, r.w, r.h);
+          if (open) { ctx.fillStyle = 'rgba(0,0,0,.06)'; for (let y = r.y; y < r.y + r.h; y += 18) ctx.fillRect(r.x, y, r.w, 2);
+            const bx = r.x + 30, by = r.top ? r.y + 30 : r.y + r.h - 150; ctx.fillStyle = '#7c2d12'; rr(ctx, bx - 4, by - 4, 128, 128, 10); ctx.fill(); ctx.fillStyle = '#fff'; rr(ctx, bx, by, 120, 120, 8); ctx.fill(); ctx.fillStyle = ['#ef4444', '#3b82f6', '#a855f7', '#f59e0b', '#14b8a6'][S.beds]; rr(ctx, bx, by + 40, 120, 80, 8); ctx.fill(); ctx.fillStyle = '#f8fafc'; rr(ctx, bx + 10, by + 8, 45, 26, 8); ctx.fill(); rr(ctx, bx + 65, by + 8, 45, 26, 8); ctx.fill();
+            ctx.fillStyle = '#78350f'; ctx.fillRect(r.x + r.w - 48, by, 30, 30); circle(ctx, r.x + r.w - 33, by + 15, 9, '#fde047'); ctx.fillStyle = '#166534'; circle(ctx, r.x + r.w - 30, by + 100, 14); ctx.fill();
+            if (S.beds >= 2) { ctx.fillStyle = 'rgba(167,139,250,.5)'; ellipse(ctx, r.x + r.w / 2, r.y + r.h / 2 + (r.top ? 40 : -40), 60, 26); ctx.fill(); }
+            for (const tr of st.trash) E.emoji(ctx, tr.e, tr.x, tr.y, 22);
+            if (st.st === 'dirty') { label(ctx, st.clean > 0 ? '🧹 ' + Math.round(st.clean * 100) + '%' : '🧹 DIRTY', r.x + r.w / 2, r.y + r.h / 2, 16, '#fde047'); if (st.clean > 0) { ctx.strokeStyle = '#4ade80'; ctx.lineWidth = 6; ctx.beginPath(); ctx.arc(r.x + r.w / 2, r.y + r.h / 2 + 30, 18, -Math.PI / 2, -Math.PI / 2 + TAU * st.clean); ctx.stroke(); } }
+          } else { ctx.fillStyle = 'rgba(0,0,0,.25)'; ctx.fillRect(r.x, r.y, r.w, r.h); label(ctx, '🔒', r.x + r.w / 2, r.y + r.h / 2, 30); }
+          ctx.fillStyle = '#1f2937'; rr(ctx, r.door - 26, r.top ? r.doorY - 34 : r.doorY + 14, 52, 20, 5); ctx.fill(); txt(ctx, String(101 + i), r.door, r.top ? r.doorY - 24 : r.doorY + 24, 12, '#fde68a', 'center', 900);
+        });
+        // closet
+        ctx.fillStyle = '#cbd5e1'; ctx.fillRect(CLOSET.x, CLOSET.y, CLOSET.w, CLOSET.h); label(ctx, 'SUPPLY ROOM', CLOSET.x + CLOSET.w / 2, CLOSET.y + CLOSET.h - 30, 14, '#334155');
+        for (const s of SHELF) { ctx.fillStyle = '#92400e'; rr(ctx, s.x - 44, s.y - 30, 88, 60, 8); ctx.fill(); E.emoji(ctx, s.e, s.x, s.y - 2, 34); ctx.strokeStyle = 'rgba(34,197,94,.7)'; ctx.setLineDash([6, 5]); ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(s.x, s.y + 30, 34, 0, TAU); ctx.stroke(); ctx.setLineDash([]); }
+        // walls
+        for (const w of walls) { ctx.fillStyle = '#57534e'; ctx.fillRect(w[0], w[1], w[2], w[3]); }
+        ctx.fillStyle = '#44403c'; for (const w of walls) ctx.fillRect(w[0], w[1] + w[3] - 3, w[2], 3);
+        // desk
+        ctx.fillStyle = '#7c2d12'; rr(ctx, DESK.x, DESK.y, DESK.w, DESK.h, 8); ctx.fill(); txt(ctx, 'RECEPTION', DESK.x + DESK.w / 2, DESK.y + 21, 14, '#fde68a', 'center', 900); circle(ctx, DESK.x + DESK.w - 20, DESK.y + 10, 7, '#fbbf24');
+        const atDesk = dist(me.x, me.y, DESKSPOT.x, DESKSPOT.y) < 60;
+        ctx.strokeStyle = atDesk ? '#4ade80' : 'rgba(34,197,94,.6)'; ctx.setLineDash([8, 6]); ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(DESKSPOT.x, DESKSPOT.y, 34, 0, TAU); ctx.stroke(); ctx.setLineDash([]);
+        if (checkT > 0) { ctx.strokeStyle = '#fde047'; ctx.lineWidth = 6; ctx.beginPath(); ctx.arc(DESKSPOT.x, DESKSPOT.y, 40, -Math.PI / 2, -Math.PI / 2 + TAU * checkT); ctx.stroke(); }
+        if (S.vend) { ctx.fillStyle = '#dc2626'; rr(ctx, 975, 680, 50, 70, 6); ctx.fill(); ctx.fillStyle = '#bae6fd'; ctx.fillRect(982, 690, 36, 30); }
+        for (let k = 0; k < S.decor; k++) { ctx.fillStyle = '#166534'; circle(ctx, 320 + k * 30, 690, 16); ctx.fill(); }
+        // pads
+        for (const p of PADS) { if (!p.ok()) continue; const c = p.cost(); ctx.fillStyle = 'rgba(220,252,231,.92)'; rr(ctx, p.x - 80, p.y - 32, 160, 64, 12); ctx.fill(); ctx.strokeStyle = '#16a34a'; ctx.lineWidth = 3; ctx.stroke(); ctx.fillStyle = 'rgba(34,197,94,.7)'; rr(ctx, p.x - 80, p.y + 22, 160 * p.paid / c, 10, 5); ctx.fill(); txt(ctx, p.label, p.x, p.y - 10, 13, '#14532d', 'center', 900); txt(ctx, '$' + fmtBig(Math.ceil(c - p.paid)), p.x, p.y + 10, 13, S.money >= 1 ? '#166534' : '#7f1d1d', 'center', 800); }
+        // cash
+        for (const c of cash) { ctx.fillStyle = '#16a34a'; rr(ctx, c.x - 16, c.y - 9, 32, 18, 3); ctx.fill(); ctx.fillStyle = '#86efac'; ctx.fillRect(c.x - 12, c.y - 5, 24, 10); txt(ctx, '$', c.x, c.y + 1, 11, '#14532d', 'center', 900); }
+        // people
+        const drawP = (x, y, lk, face, step, extra) => { ctx.save(); ctx.translate(x, y); ellipse(ctx, 0, 4, 16, 6, 'rgba(0,0,0,.25)'); const sw = Math.sin(step || 0) * 4; ctx.fillStyle = '#1f2937'; ctx.fillRect(-8, -16 + sw * 0.3, 6, 16); ctx.fillRect(2, -16 - sw * 0.3, 6, 16); ctx.fillStyle = lk.shirt; rr(ctx, -12, -42, 24, 28, 8); ctx.fill(); circle(ctx, 0, -53, 11, lk.skin); ctx.fillStyle = lk.hair; ctx.beginPath(); ctx.arc(0, -56, 11.5, Math.PI, 0); ctx.fill(); circle(ctx, face * 4 - 3, -52, 1.6, '#111'); circle(ctx, face * 4 + 3, -52, 1.6, '#111'); if (extra === 'bag') { ctx.fillStyle = lk.bag; rr(ctx, 12, -24, 13, 17, 3); ctx.fill(); } ctx.restore(); };
+        const list = guests.map(g => ({ y: g.y, f: () => { drawP(g.x, g.y, g.look, g.face || 1, g.step, g.st === 'queue' || g.st === 'toRoom' ? 'bag' : null); if (g.st === 'queue') { const p = g.wait / g.patience; ctx.fillStyle = 'rgba(0,0,0,.35)'; ctx.fillRect(g.x - 16, g.y - 80, 32, 5); ctx.fillStyle = p < 0.5 ? '#4ade80' : p < 0.8 ? '#facc15' : '#ef4444'; ctx.fillRect(g.x - 16, g.y - 80, 32 * (1 - p), 5); } if (g.st === 'stay' && g.req) { rr(ctx, g.x - 22, g.y - 98, 44, 32, 10); ctx.fillStyle = '#fff'; ctx.fill(); E.emoji(ctx, g.req === 'towel' ? '🧺' : '🍔', g.x, g.y - 82, 22); } } }));
+        for (const s of staff) list.push({ y: s.y, f: () => { drawP(s.x, s.y, { skin: '#c68642', shirt: s.col, hair: '#111' }, s.face || 1, s.step); if (s.carry) E.emoji(ctx, s.carry === 'towel' ? '🧺' : '🍔', s.x, s.y - 78, 20); } });
+        if (S.rec) list.push({ y: 690, f: () => drawP(640, 700, { skin: '#f1c27d', shirt: '#1e3a8a', hair: '#7c2d12' }, 1, 0) });
+        list.push({ y: me.y, f: () => { drawP(me.x, me.y, { skin: '#f1c27d', shirt: '#111827', hair: '#3f2a1d' }, me.face, me.step); ctx.fillStyle = '#fde047'; ctx.fillRect(me.x - 3, me.y - 40, 6, 16); if (me.carry) E.emoji(ctx, me.carry === 'towel' ? '🧺' : '🍔', me.x, me.y - 80, 24); label(ctx, 'YOU', me.x, me.y - (me.carry ? 104 : 78), 12, '#fde047'); } });
+        list.sort((a, b) => a.y - b.y).forEach(o => o.f());
+        fx.draw(ctx); E.endWorld();
+        rr(ctx, Wd / 2 - 170, 10, 340, 54, 16); ctx.fillStyle = 'rgba(15,23,42,.8)'; ctx.fill();
+        label(ctx, '$' + fmt(S.money), Wd / 2 - 70, 37, 24, '#86efac'); label(ctx, '⭐ ' + S.stars.toFixed(1), Wd / 2 + 70, 37, 20, '#fde047');
+        const q = guests.filter(g => g.st === 'queue').length, reqs = guests.filter(g => g.req).length, dirty = roomState.filter((s, i) => S.rooms[i] && s.st === 'dirty').length;
+        const tip = q && freeRoom() >= 0 && !atDesk && !S.rec ? '🛎️ Guests waiting – stand behind the RECEPTION desk!' : q && freeRoom() < 0 ? (dirty ? '🧹 No clean rooms – go clean a dirty room!' : '🔨 All rooms full – build more rooms!') : reqs && !me.carry ? '🧺 A guest needs something – grab it from the SUPPLY ROOM' : me.carry ? '🚪 Take it to the guest\'s room' : cash.length ? '💵 Collect the cash at the desk' : '';
+        if (tip) label(ctx, tip, Wd / 2, 86, 15, '#fff');
+        if (msgT > 0) label(ctx, msg, Wd / 2, Hd * 0.28, 28, '#fde047');
       },
-      down(x, y) { drag = { y, cy: camY, moved: false }; },
-      move(x, y) { if (drag && E.ptrDown) { if (Math.abs(y - drag.y) > 8) drag.moved = true; if (drag.moved) camY = drag.cy + (y - drag.y); } },
-      up(x, y) { if (!drag) return; const moved = drag.moved; drag = null; if (moved || !this._xf) return; const { ox, oy, s } = this._xf; const wx = (x - ox) / s, wy = (y - oy) / s; const id = ui.hit(wx, wy); if (!id) return; if (id[0] === 'g') { const g = guests[+id.slice(1)]; if (g && g.st === 'queue') checkIn(g); } else if (id[0] === 'r') roomTap(+id.slice(1)); },
-      wheel(d) { camY -= d; },
+      _dbg: () => ({ x: Math.round(me.x), y: Math.round(me.y), money: Math.round(S.money), q: guests.filter(g => g.st === 'queue').length, stay: guests.filter(g => g.st === 'stay').length, cash: cash.length, dirty: roomState.filter(s => s.st === 'dirty').length }),
       destroy() { save(); },
-      hud() { return { stats: [['Rooms', S.rooms.filter(Boolean).length + '/' + S.rooms.length], ['Guests served', S.served]] }; }
+      hud() { return { stats: [['Rooms', S.rooms.filter(Boolean).length + '/7'], ['Guests', S.served]] }; }
     };
   }
 });
