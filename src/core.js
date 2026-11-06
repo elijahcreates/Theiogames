@@ -682,6 +682,19 @@ function teardown() {
   E.g = null; layer.textContent = ''; E.pads(null); hudL.innerHTML = ''; hudR.innerHTML = ''; lastL = lastR = '';
   $('#toast').textContent = ''; E.shakeAmt = 0;
 }
+const LOAD_TIPS = ['Play any game for 3 minutes to unlock a new pet 🐾', 'Beat your best score to complete a daily challenge 🏆', 'Tap the 🤍 on a game to add it to your favourites', 'Many games have a 👥 2-player mode – grab a friend!', 'Press P to pause and M to mute at any time', 'Coins from every game unlock rewards 🪙', 'New hottest games are marked with 🔥 TRENDING'];
+function showLoader(def) {
+  const ld = $('#loader'), bar = ld.querySelector('.lbar i'), pct = ld.querySelector('.lpct');
+  ld.querySelector('.lhx').style.backgroundImage = 'url(' + thumbURL(def) + ')';
+  ld.querySelector('h2').textContent = def.title;
+  ld.querySelector('.lctl').textContent = '🎮 ' + (E.touch && def.hintTouch ? def.hintTouch : def.controls || '');
+  ld.querySelector('.ltip').textContent = pick(LOAD_TIPS);
+  ld.style.setProperty('--lc1', def.c1 || '#2a2f6b');
+  clearInterval(E._ldI); clearTimeout(E._ldT); ld.classList.remove('hide');
+  const t0 = performance.now(), DUR = 1100;
+  const step = () => { const k = Math.min(1, (performance.now() - t0) / DUR), e = 1 - Math.pow(1 - k, 3); bar.style.width = (e * 100) + '%'; pct.textContent = Math.round(e * 100) + '%'; if (k >= 1) { clearInterval(E._ldI); pct.textContent = 'Ready!'; E._ldT = setTimeout(() => ld.classList.add('hide'), 160); } };
+  step(); E._ldI = setInterval(step, 30);
+}
 function startGame(def, keepMode) {
   Sound.init(); clearTimeout(overTimer); clearTimeout(hintTimer);
   teardown();
@@ -693,7 +706,7 @@ function startGame(def, keepMode) {
   E.cam.x = E.cam.y = 0; E.cam.zoom = 1;
   E.running = true;
   if (!raf) { lastTs = performance.now(); raf = requestAnimationFrame(frame); }
-  if (!keepMode) { const ld = $('#loader'); ld.querySelector('.lhx').style.backgroundImage = 'url(' + thumbURL(def) + ')'; ld.querySelector('h2').textContent = def.title; const bar = ld.querySelector('.lbar i'); bar.style.animation = 'none'; void bar.offsetWidth; bar.style.animation = ''; ld.classList.remove('hide'); clearTimeout(E._ldT); E._ldT = setTimeout(() => ld.classList.add('hide'), 700); }
+  if (!keepMode) showLoader(def);
   const go = () => {
     if (!E.running || E.def !== def) return;
     E.g = def.create(E) || null;
@@ -718,7 +731,7 @@ function startGame(def, keepMode) {
   } else { if (!def.twoP) E.mode = 1; go(); }
 }
 function stopGame() {
-  $('#loader').classList.add('hide');
+  $('#loader').classList.add('hide'); clearInterval(E._ldI); clearTimeout(E._ldT);
   E.running = false; teardown(); clearTimeout(overTimer); clearTimeout(hintTimer);
   if (raf) { cancelAnimationFrame(raf); raf = 0; }
   Input.reset(); hideOverlay(); panelEl.hidden = true; $('#chooser').hidden = true; panelOpen = false; choosing = false; userPaused = false; E.paused = false;
@@ -787,7 +800,7 @@ E.onKey = (code, key) => {
 
 /* ------------------------------ homepage ------------------------------ */
 /* ===== EDIT THIS LIST to change the 🔥 Hottest Games Right Now section (use game ids) ===== */
-const HOTTEST = ['rollrush', 'stacksmash', 'bottleflip', 'flappyjump', 'slope', 'snake', 'shark'];
+const HOTTEST = ['rollrush', 'stacksmash', 'bottle', 'flappyjump', 'slope', 'snake', 'shark'];
 const CATS = ['All', 'Popular', 'Multiplayer', 'Physics', 'Arcade', 'Endless', 'Puzzle', 'Brain Games', 'Sports', 'Simulation', 'Creative', 'IO Arena'];
 let curCat = store.get('cat', 'All'), curQ = '', featIdx = 0, featTimer = 0, homeTab = 'pets';
 const menuEl = $('#menu');

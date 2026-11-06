@@ -1,6 +1,6 @@
 # TheIOGames
 
-**Appropriate, Free & Fun for All Ages!** A self-contained browser arcade with 59 built-in games.
+**Appropriate, Free & Fun for All Ages!** A self-contained browser arcade with 58 built-in games.
 
 ## The deliverable: `index.html`
 
@@ -15,12 +15,12 @@ The other folders are only for development. You don't need them to publish:
 | `tools/smoke.js`, `tools/shot.js` | Playwright scripts for automated testing and screenshots |
 | `backup/Index.original.html`, `Index.html.html` | Your original site, kept untouched |
 
-## Games (59)
+## Games (58)
 
 * **The 5 original games are kept as they were:** Hole.io, Farmer.io, Chicken.io, Snake.io, Cells
 * **The 43 core games:** Bottle Jump 3D, Basketball Challenge, Perfect Stack, Tower Balance, Target Toss, Mini Golf, Pool 8-Ball, Bowling, Slope Runner, Geometry Rush, Color Switch, Flappy Challenge, Subway Escape, Space Shooter, Brick Breaker, Asteroid Field, 2048, Parking Jam, Block Puzzle, Sudoku, Math Swap, Paper Territory, The Impossible Quiz, Word Scramble, Reaction Test, Whack-a-Mole, Piano Tiles, Clicker Empire, Reflex Challenge, Aim Trainer, Soccer Penalties, Tennis Challenge, Table Tennis, Skateboard Tricks, Car Stunt Challenge, Hole Arena, Slither Arena, Build a Bridge, Fishing Frenzy, Creature Evolution, Hotel Simulator, Pet Store Simulator, Hammer Climb Challenge
 * **The 5 additional games:** Kart Clash, Style Studio, Pirate Royale, Sushi Snake, Brainrot Heist
-* **The 5 newest games:** Roll Rush 3D (ball rolling on a floating, twisting track), Stack Smash 3D (smash down through spinning ring stacks), Bottle Flip, Flappy Jump, Shark.io
+* **The 4 newest games:** Roll Rush 3D (ball rolling on a floating, twisting track), Stack Smash 3D (smash down through spinning ring stacks), Flappy Jump, Shark.io
 
 ### 🔥 Hottest Games Right Now
 

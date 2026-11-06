@@ -150,6 +150,45 @@ main{max-width:1320px;margin:auto;padding:0 max(16px,env(safe-area-inset-left)) 
 #loader .lbar{width:min(260px,70vw);height:10px;border-radius:6px;background:rgba(255,255,255,.12);overflow:hidden}
 #loader .lbar i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--accent),var(--accent2));border-radius:6px;animation:lfill .65s ease-out forwards}
 #loader small{color:#a5b4fc;font-weight:700}
+
+/* ---------- intro splash + game loader ---------- */
+#splash{position:fixed;inset:0;z-index:200;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;background:radial-gradient(circle at 50% 42%,#2b1d6b 0%,#0d0b2a 45%,#03040b 100%);color:#fff;overflow:hidden;transition:opacity .6s ease,transform .6s ease}
+#splash.out{opacity:0;transform:scale(1.08);pointer-events:none}
+.sp-hexes{position:absolute;inset:0;pointer-events:none}
+.sp-hexes .h{position:absolute;bottom:-160px;clip-path:polygon(50% 0,100% 25%,100% 75%,50% 100%,0 75%,0 25%);background:center/cover;opacity:.0;animation:spRise linear infinite}
+@keyframes spRise{0%{transform:translateY(0) rotate(0);opacity:0}10%{opacity:var(--o)}85%{opacity:var(--o)}100%{transform:translateY(-125vh) rotate(var(--r));opacity:0}}
+.sp-core{position:relative;width:170px;height:170px;display:grid;place-items:center;margin-bottom:8px}
+.sp-glow{position:absolute;inset:-60px;border-radius:50%;background:radial-gradient(circle,rgba(124,92,255,.55),rgba(0,212,255,.15) 45%,transparent 70%);animation:spPulse 1.6s ease-in-out infinite}
+@keyframes spPulse{50%{transform:scale(1.15);opacity:.7}}
+.sp-ring,.lring{position:relative;width:140px;height:162px;clip-path:polygon(50% 0,100% 25%,100% 75%,50% 100%,0 75%,0 25%);overflow:hidden;display:grid;place-items:center}
+.sp-ring>i,.lring>i{position:absolute;inset:-40%;background:conic-gradient(from 0deg,#7c5cff,#00d4ff,#22c55e,#fde047,#f97316,#ec4899,#7c5cff);animation:spin 1.6s linear infinite}
+.sp-logo{position:relative;width:122px;height:141px;clip-path:polygon(50% 0,100% 25%,100% 75%,50% 100%,0 75%,0 25%);background:linear-gradient(145deg,#1e1b4b,#0b1020);display:grid;place-items:center;font:900 3.2rem/1 system-ui,sans-serif;letter-spacing:-2px;background-clip:padding-box}
+.sp-logo{color:transparent;background-image:linear-gradient(145deg,#1e1b4b,#0b1020);text-shadow:none}
+.sp-logo::after{content:'IO';position:absolute;inset:0;display:grid;place-items:center;background:linear-gradient(90deg,#a78bfa,#22d3ee,#a78bfa);background-size:200% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;animation:rainbow 2s linear infinite}
+.sp-orbit{position:absolute;inset:-26px;animation:spin 3s linear infinite}
+.sp-orbit b{position:absolute;width:12px;height:12px;border-radius:50%;background:#fde047;box-shadow:0 0 14px #fde047;left:50%;top:0;margin-left:-6px}
+.sp-orbit b:nth-child(2){background:#22d3ee;box-shadow:0 0 14px #22d3ee;top:auto;bottom:0}
+.sp-orbit b:nth-child(3){background:#f472b6;box-shadow:0 0 14px #f472b6;left:0;top:50%;margin:-6px 0 0}
+.sp-title{font-size:clamp(2.2rem,8vw,3.6rem);font-weight:900;letter-spacing:-1px;animation:spIn .7s cubic-bezier(.2,1.4,.4,1) both .1s}
+.sp-title span{background:linear-gradient(90deg,#7c5cff,#00d4ff);-webkit-background-clip:text;background-clip:text;color:transparent}
+.sp-sub{color:#5eead4;font-weight:800;animation:spIn .7s cubic-bezier(.2,1.4,.4,1) both .25s}
+@keyframes spIn{from{opacity:0;transform:translateY(18px) scale(.9)}}
+.sp-bar{width:min(320px,74vw);height:12px;border-radius:8px;background:rgba(255,255,255,.1);overflow:hidden;margin-top:14px;box-shadow:inset 0 0 0 1px rgba(255,255,255,.08)}
+.sp-bar i,#loader .lbar i{display:block;height:100%;width:0;border-radius:8px;background:linear-gradient(90deg,#7c5cff,#00d4ff,#22c55e,#7c5cff);background-size:300% 100%;animation:rainbow 1.2s linear infinite;box-shadow:0 0 16px rgba(0,212,255,.7);transition:width .12s linear}
+.sp-pct{font-weight:900;font-size:1.1rem;color:#c4b5fd;font-variant-numeric:tabular-nums}
+.sp-tip{color:#94a3b8;font-size:.88rem;font-weight:600;min-height:1.3em;text-align:center;padding:0 20px;max-width:460px}
+#loader{background:radial-gradient(circle at 50% 40%,var(--lc1,#2a2f6b),#05060d 72%)}
+#loader .lspark{position:absolute;inset:0;background-image:radial-gradient(2px 2px at 20% 30%,#fff8,transparent),radial-gradient(2px 2px at 70% 20%,#fff6,transparent),radial-gradient(2px 2px at 40% 80%,#fff6,transparent),radial-gradient(2px 2px at 85% 65%,#fff8,transparent),radial-gradient(2px 2px at 10% 75%,#fff6,transparent);animation:spPulse 2s ease-in-out infinite;pointer-events:none}
+#loader .lring{width:176px;height:203px;filter:drop-shadow(0 0 30px rgba(124,92,255,.7));animation:bob 1.6s ease-in-out infinite}
+#loader .lring .lhx{position:relative;width:164px;height:189px;animation:none;box-shadow:none}
+#loader .lctl{color:#cbd5e1;font-size:.85rem;font-weight:700;text-align:center;padding:0 20px;max-width:440px}
+#loader .lbar{width:min(300px,72vw);height:12px;border-radius:8px}
+#loader .lbar i{animation:rainbow 1.2s linear infinite}
+#loader small{text-align:center;padding:0 20px}
+#loader .lpct{color:#fff}
+#splash>*:not(.sp-hexes){position:relative;z-index:1}
+@media (max-width:640px){.sp-hexes .h{--o:.22!important;filter:blur(1.5px)!important}}
+@media (prefers-reduced-motion:reduce){.sp-hexes{display:none}.sp-ring>i,.lring>i,.sp-orbit{animation-duration:6s}}
 @keyframes lfill{to{width:100%}}
 
 .feat .fehx{width:clamp(130px,24vw,240px);height:calc(clamp(130px,24vw,240px) * 1.1547);clip-path:polygon(50% 0,100% 25%,100% 75%,50% 100%,0 75%,0 25%);background:center/cover;font-size:0}
@@ -297,6 +336,7 @@ footer{text-align:center;color:var(--muted);font-size:.82rem;padding:10px 16px 3
 <body>
 
 <div id="app">
+<div id="splash"><div class="sp-hexes"></div><div class="sp-core"><div class="sp-glow"></div><div class="sp-ring"><i></i><div class="sp-logo">IO</div></div><div class="sp-orbit"><b></b><b></b><b></b></div></div><h1 class="sp-title">The<span>IO</span>Games</h1><p class="sp-sub">Appropriate, Free &amp; Fun for All Ages!</p><div class="sp-bar"><i></i></div><div class="sp-pct">0%</div><p class="sp-tip"></p></div>
   <div class="tagline">Appropriate, Free &amp; Fun for All Ages!</div>
   <header class="top">
     <div class="logo" id="logo"><i>IO</i><b>The<span>IO</span>Games</b></div>
@@ -307,13 +347,13 @@ footer{text-align:center;color:var(--muted);font-size:.82rem;padding:10px 16px 3
     </div>
   </header>
   <main id="menu"></main>
-  <footer>© TheIOGames — every game is original, built into this page and runs right here. No downloads, no accounts.<br><b>Version 3 · 59 games · Hexagon update</b></footer>
+  <footer>© TheIOGames — every game is original, built into this page and runs right here. No downloads, no accounts.<br><b>Version 4 · 58 games · New loading screens</b></footer>
   <noscript><p style="text-align:center;padding:30px">Please enable JavaScript to play.</p></noscript>
 </div>
 
 <div id="game">
   <canvas id="cv"></canvas>
-  <div id="loader" class="hide"><div class="lhx"></div><h2></h2><div class="lbar"><i></i></div><small>Loading…</small></div>
+  <div id="loader" class="hide"><div class="lspark"></div><div class="lring"><i></i><div class="lhx"></div></div><h2></h2><p class="lctl"></p><div class="lbar"><i></i></div><small><b class="lpct">0%</b> · <span class="ltip"></span></small></div>
   <div id="layer"></div>
   <div id="bar">
     <button id="btnMenu" tabindex="-1" title="Back to games menu">☰<span> Menu</span></button>
