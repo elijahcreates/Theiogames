@@ -693,6 +693,7 @@ function startGame(def, keepMode) {
   E.cam.x = E.cam.y = 0; E.cam.zoom = 1;
   E.running = true;
   if (!raf) { lastTs = performance.now(); raf = requestAnimationFrame(frame); }
+  if (!keepMode) { const ld = $('#loader'); ld.querySelector('.lhx').style.backgroundImage = 'url(' + thumbURL(def) + ')'; ld.querySelector('h2').textContent = def.title; const bar = ld.querySelector('.lbar i'); bar.style.animation = 'none'; void bar.offsetWidth; bar.style.animation = ''; ld.classList.remove('hide'); clearTimeout(E._ldT); E._ldT = setTimeout(() => ld.classList.add('hide'), 700); }
   const go = () => {
     if (!E.running || E.def !== def) return;
     E.g = def.create(E) || null;
@@ -717,6 +718,7 @@ function startGame(def, keepMode) {
   } else { if (!def.twoP) E.mode = 1; go(); }
 }
 function stopGame() {
+  $('#loader').classList.add('hide');
   E.running = false; teardown(); clearTimeout(overTimer); clearTimeout(hintTimer);
   if (raf) { cancelAnimationFrame(raf); raf = 0; }
   Input.reset(); hideOverlay(); panelEl.hidden = true; $('#chooser').hidden = true; panelOpen = false; choosing = false; userPaused = false; E.paused = false;
@@ -784,31 +786,59 @@ E.onKey = (code, key) => {
 };
 
 /* ------------------------------ homepage ------------------------------ */
+/* ===== EDIT THIS LIST to change the 🔥 Hottest Games Right Now section (use game ids) ===== */
+const HOTTEST = ['rollrush', 'stacksmash', 'bottleflip', 'flappyjump', 'slope', 'snake', 'shark'];
 const CATS = ['All', 'Popular', 'Multiplayer', 'Physics', 'Arcade', 'Endless', 'Puzzle', 'Brain Games', 'Sports', 'Simulation', 'Creative', 'IO Arena'];
 let curCat = store.get('cat', 'All'), curQ = '', featIdx = 0, featTimer = 0, homeTab = 'pets';
 const menuEl = $('#menu');
 function updateCoinBtn() { $('#coinBtn').textContent = '🪙 ' + fmt(Prof.d.coins); }
 function applyTheme() { document.body.className = document.body.className.replace(/\bth-\w+/g, '').trim(); if (Prof.d.theme !== 'default') document.body.classList.add('th-' + Prof.d.theme); }
 const THEMES = [['default', 'Galaxy', 0, '#7c5cff,#22d3ee'], ['ocean', 'Ocean', 150, '#0ea5e9,#34d399'], ['sunset', 'Sunset', 250, '#ff6a3d,#ffcf4a'], ['forest', 'Forest', 300, '#22c55e,#a3e635'], ['candy', 'Candy', 400, '#ec4899,#a78bfa'], ['gold', 'Royal Gold', 1000, '#eab308,#fde047']];
-function card(def) {
+/* ---- game thumbnails: each game registers a painter in THUMBS; drawn once & cached ---- */
+const THUMBS = {}, thumbCache = {};
+function thumbURL(def) {
+  if (thumbCache[def.id]) return thumbCache[def.id];
+  const S = 300, c = document.createElement('canvas'); c.width = c.height = S; const x = c.getContext('2d');
+  if (!x) return '';
+  try {
+    x.fillStyle = lgrad(x, 0, 0, S, S, [def.c1, def.c2]); x.fillRect(0, 0, S, S);
+    if (THUMBS[def.id]) THUMBS[def.id](x, S, def);
+    else { x.fillStyle = 'rgba(255,255,255,.12)'; for (let i = 0; i < 6; i++) { circle(x, (i * 97) % S, (i * 61) % S, 30 + i * 8); x.fill(); } E.emoji(x, def.emoji, S / 2, S * 0.42, S * 0.42); }
+  } catch (e) { console.error(e); }
+  thumbCache[def.id] = c.toDataURL('image/png');
+  return thumbCache[def.id];
+}
+function card(def, w, hot) {
   const best = store.get('best_' + def.id, 0), fav = Prof.d.favs.indexOf(def.id) >= 0;
-  const el = document.createElement('article'); el.className = 'card'; el.tabIndex = 0;
-  el.style.setProperty('--c1', def.c1); el.style.setProperty('--c2', def.c2);
-  const bd = (def.twoP ? '<span class="badge p2">👥 2P</span>' : '') + (def.isNew ? '<span class="badge new">NEW</span>' : '') + (def.hot ? '<span class="badge hot">🔥 HOT</span>' : '');
-  const bestTxt = best ? (def.fmtScore ? def.fmtScore(best) : fmt(best)) : '—';
-  el.innerHTML = `<div class="art"><div class="badges">${bd}</div><button class="fav" title="Favorite">${fav ? '❤️' : '🤍'}</button><span class="e">${def.emoji}</span></div>
-    <div class="info"><h3>${esc(def.title)}</h3><p>${esc(def.desc)}</p><div class="meta"><span>${esc((def.cats || [])[0] || '')}</span><span>🏆 <b>${esc(bestTxt)}</b></span></div></div>`;
+  const el = document.createElement('article'); el.className = 'hx'; el.tabIndex = 0; el.title = def.title + ' – ' + def.desc;
+  el.style.setProperty('--c1', def.c1); el.style.setProperty('--c2', def.c2); if (w) el.style.setProperty('--w', w + 'px');
+  const bd = (hot ? '<span class="badge hot">🔥 TRENDING</span>' : (def.twoP ? '<span class="badge p2">👥 2P</span>' : '') + (def.isNew ? '<span class="badge new">NEW</span>' : '') + (def.hot ? '<span class="badge hot">🔥</span>' : ''));
+  const bestTxt = best ? (def.fmtScore ? def.fmtScore(best) : fmt(best)) : '';
+  el.innerHTML = `<div class="hxi"><div class="hxb"><img alt="" src="${thumbURL(def)}"><div class="shade"></div><div class="badges">${bd}</div><button class="fav" title="Favorite">${fav ? '❤️' : '🤍'}</button><div class="hxt"><h3>${esc(def.title)}</h3><small>${bestTxt ? '🏆 ' + esc(bestTxt) : esc((def.cats || [])[0] || '')}</small></div></div></div>`;
   el.querySelector('.fav').addEventListener('click', e => { e.stopPropagation(); toggleFav(def.id); });
   el.addEventListener('click', () => play(def)); el.addEventListener('keydown', e => { if (e.key === 'Enter') play(def); });
   return el;
 }
+/* honeycomb layout for grids of hexagons */
+function layoutHoney(box) {
+  const items = [...box.children], W = box.clientWidth || 300, gap = 10, n = items.length; if (!n) return;
+  const target = W < 520 ? 160 : W < 900 ? 170 : 185; let cols = Math.max(2, Math.floor((W + gap) / (target + gap)));
+  let w = Math.min(215, (W - gap * (cols - 1) - (n > cols ? 0 : 0)) / cols), h = w * 1.1547; const step = h * 0.75 + gap * 0.87;
+  let i = 0, row = 0; const rowsW = cols * w + (cols - 1) * gap, ox = (W - rowsW) / 2;
+  while (i < n) { const odd = row % 2 === 1, cnt = odd ? cols - 1 : cols; for (let k = 0; k < cnt && i < n; k++, i++) { const el = items[i]; el.style.setProperty('--w', w + 'px'); el.style.left = (ox + k * (w + gap) + (odd ? (w + gap) / 2 : 0)) + 'px'; el.style.top = (row * step) + 'px'; } row++; }
+  box.style.height = ((row - 1) * step + h + 6) + 'px';
+}
+let honeyT = 0; window.addEventListener('resize', () => { clearTimeout(honeyT); honeyT = setTimeout(() => document.querySelectorAll('.honey').forEach(layoutHoney), 120); });
 function toggleFav(id) { const f = Prof.d.favs, i = f.indexOf(id); if (i >= 0) f.splice(i, 1); else { f.unshift(id); Sound.play('ding', 0); } Prof.save(); checkAch(); renderMenu(); }
 function section(title, sub, defs, opts) {
   opts = opts || {}; const s = document.createElement('section'); s.className = 'sec';
   s.innerHTML = `<h2>${title} ${sub ? `<small>${sub}</small>` : ''}</h2>`;
-  const box = document.createElement('div'); box.className = opts.grid ? 'grid' : 'row';
+  const box = document.createElement('div'); box.className = opts.grid ? 'honey' : 'hrow';
   if (!defs.length) { box.className = 'empty'; box.textContent = opts.empty || 'Nothing here yet.'; }
-  defs.forEach(d => box.appendChild(card(d))); s.appendChild(box); return s;
+  const w = opts.grid ? 0 : (window.innerWidth < 600 ? 140 : 165);
+  defs.forEach(d => box.appendChild(card(d, w, opts.hot))); s.appendChild(box);
+  if (opts.grid) requestAnimationFrame(() => layoutHoney(box));
+  return s;
 }
 const gById = id => GAMES.find(g => g.id === id);
 const matches = (g, q) => { q = q.toLowerCase(); return g.title.toLowerCase().indexOf(q) >= 0 || (g.cats || []).some(c => c.toLowerCase().indexOf(q) >= 0) || (g.desc || '').toLowerCase().indexOf(q) >= 0 || (g.tags || '').indexOf(q) >= 0; };
@@ -827,7 +857,7 @@ function renderMenu() {
   const setFeat = () => {
     const g = feats[featIdx % feats.length]; if (!g) return;
     feat.style.setProperty('--c1', g.c1); feat.style.setProperty('--c2', g.c2);
-    feat.innerHTML = `<span class="fe">${g.emoji}</span><div class="ft"><small>⭐ FEATURED${g.twoP ? ' • 👥 2 PLAYERS' : ''}</small><h2>${esc(g.title)}</h2><p>${esc(g.desc)}</p><span class="go">▶ Play Now</span></div><div class="dots">${feats.map((x, i) => `<b class="${i === featIdx % feats.length ? 'on' : ''}"></b>`).join('')}</div>`;
+    feat.innerHTML = `<div class="fe fehx" style="background-image:url(${thumbURL(g)})"></div><div class="ft"><small>⭐ FEATURED${g.twoP ? ' • 👥 2 PLAYERS' : ''}</small><h2>${esc(g.title)}</h2><p>${esc(g.desc)}</p><span class="go">▶ Play Now</span></div><div class="dots">${feats.map((x, i) => `<b class="${i === featIdx % feats.length ? 'on' : ''}"></b>`).join('')}</div>`;
     feat.onclick = () => play(g);
   };
   setFeat(); featTimer = setInterval(() => { featIdx++; setFeat(); }, 6000);
@@ -840,6 +870,9 @@ function renderMenu() {
     <div class="box"><h3>📅 Daily Challenges <small>resets at midnight</small></h3><div class="chal">${ch.map(c => { const v = Math.min(c.goal, c.val(dd)), done = dd.done.indexOf(c.id) >= 0; return `<div class="c ${done ? 'done' : ''}"><i>${c.ic}</i><div>${esc(c.t)}<div class="pb"><u style="width:${v / c.goal * 100}%"></u></div></div><em>${done ? '✓ Done' : '+' + c.rw + ' 🪙'}</em></div>`; }).join('')}</div></div>
     <div class="box"><div class="statrow"><div><b>${Object.keys(d.plays).length}</b><span>GAMES TRIED</span></div><div><b>${Math.floor(totalT / 60)}m</b><span>PLAY TIME</span></div><div><b>${Object.keys(d.ach).length}</b><span>ACHIEVEMENTS</span></div></div></div>`;
   hero.appendChild(feat); hero.appendChild(side); menuEl.appendChild(hero);
+  // 🔥 Hottest Games Right Now – edit HOTTEST (top of the homepage code) to change which games appear
+  const hotDefs = HOTTEST.map(gById).filter(Boolean);
+  if (hotDefs.length) { const hs = document.createElement('section'); hs.className = 'hottest'; hs.innerHTML = '<h2>🔥 Hottest Games Right Now</h2><p>The most-played, most exciting games on TheIOGames this week</p>'; const hb = document.createElement('div'); hb.className = 'honey'; hotDefs.forEach(d => hb.appendChild(card(d, 0, true))); hs.appendChild(hb); menuEl.appendChild(hs); requestAnimationFrame(() => layoutHoney(hb)); }
   // categories
   const cats = document.createElement('div'); cats.className = 'cats';
   CATS.forEach(c => { const b = document.createElement('button'); b.className = 'cat' + (c === curCat ? ' on' : ''); b.textContent = c === 'Multiplayer' ? '👥 Multiplayer' : c; b.onclick = () => { curCat = c; store.set('cat', c); renderMenu(); const a = $('#allGames'); if (a) a.scrollIntoView({ behavior: 'smooth', block: 'start' }); }; cats.appendChild(b); });
