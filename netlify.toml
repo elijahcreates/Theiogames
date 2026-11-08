@@ -1,8 +1,27 @@
 # Netlify configuration for TheIOGames
-# The site is a single static file (index.html) – no build step is needed.
+# The site itself is static (index.html). When deployed from Git, Netlify copies the public files
+# into public/ and also deploys the analytics functions in netlify/ (edge + serverless).
+# A manual drag-and-drop upload still works: the site loads normally, analytics just stays off.
 [build]
-  publish = "."
-  command = ""
+  publish = "public"
+  command = "mkdir -p public && cp index.html admin.html og-image.jpg robots.txt public/"
+
+[functions]
+  directory = "netlify/functions"
+  node_bundler = "esbuild"
+
+# Private analytics dashboard
+[[redirects]]
+  from = "/admin"
+  to = "/admin.html"
+  status = 200
+
+[[headers]]
+  for = "/admin.html"
+  [headers.values]
+    X-Robots-Tag = "noindex, nofollow"
+    Cache-Control = "no-store"
+    X-Frame-Options = "DENY"
 
 # Games are deep-linked with #hash URLs (e.g. /#bottle), so every path
 # should serve the main page instead of a 404.

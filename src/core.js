@@ -706,6 +706,7 @@ function startGame(def, keepMode) {
   E.running = true;
   if (!raf) { lastTs = performance.now(); raf = requestAnimationFrame(frame); }
   if (!keepMode) showLoader(def);
+  if (!keepMode) try { window.dispatchEvent(new CustomEvent('tiog:game', { detail: { id: def.id } })); } catch (e) {}
   const go = () => {
     if (!E.running || E.def !== def) return;
     E.g = def.create(E) || null;
@@ -735,6 +736,7 @@ function stopGame() {
   if (raf) { cancelAnimationFrame(raf); raf = 0; }
   Input.reset(); hideOverlay(); panelEl.hidden = true; $('#chooser').hidden = true; panelOpen = false; choosing = false; userPaused = false; E.paused = false;
   gameEl.classList.remove('on'); document.body.classList.remove('playing'); $('#app').style.display = '';
+  try { window.dispatchEvent(new CustomEvent('tiog:game', { detail: { id: null } })); } catch (e) {}
   Prof.save(); renderMenu();
 }
 function frame(ts) {

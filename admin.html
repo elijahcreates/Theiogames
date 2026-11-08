@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>TheIOGames Analytics</title>
+<style>
+:root{color-scheme:dark;--page:#0d0d0d;--surface:#1a1a19;--surface-2:#222220;--ink:#f0efec;--ink-2:#c3c2b7;--muted:#898781;--grid:#2c2c2a;--axis:#383835;--ring:rgba(255,255,255,.10);
+  --human:#3987e5;--bot:#d95926;--unc:#199e70;--good:#0ca30c;--warning:#fab219;--critical:#d03b3b;--accent:#7c5cff}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--page);color:var(--ink);font:14px/1.45 system-ui,-apple-system,"Segoe UI",sans-serif;min-height:100vh}
+button,input{font:inherit;color:inherit}
+button{cursor:pointer;background:none;border:0}
+.wrap{max-width:1240px;margin:0 auto;padding:0 16px 48px}
+header.top{position:sticky;top:0;z-index:5;background:color-mix(in srgb,var(--page) 88%,transparent);backdrop-filter:blur(10px);border-bottom:1px solid var(--ring)}
+header .in{max-width:1240px;margin:0 auto;padding:12px 16px;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.logo{display:flex;align-items:center;gap:10px;font-weight:800;font-size:1.05rem}
+.logo i{width:30px;height:34px;clip-path:polygon(50% 0,100% 25%,100% 75%,50% 100%,0 75%,0 25%);background:linear-gradient(135deg,#7c5cff,#00d4ff);display:grid;place-items:center;font-style:normal;font-size:.75rem;font-weight:900}
+.logo small{color:var(--muted);font-weight:600}
+.seg{display:flex;background:var(--surface);border:1px solid var(--ring);border-radius:10px;padding:3px;margin-left:auto}
+.seg button{padding:6px 12px;border-radius:7px;white-space:nowrap;color:var(--ink-2);font-weight:600;font-size:.85rem}
+.seg button[aria-pressed=true]{background:var(--surface-2);color:var(--ink);box-shadow:0 0 0 1px var(--ring)}
+.live{display:flex;align-items:center;gap:8px;color:var(--muted);font-size:.8rem}
+.live b{width:8px;height:8px;border-radius:50%;background:var(--good);box-shadow:0 0 0 0 rgba(12,163,12,.6);animation:pulse 2s infinite}
+@keyframes pulse{70%{box-shadow:0 0 0 7px rgba(12,163,12,0)}100%{box-shadow:0 0 0 0 rgba(12,163,12,0)}}
+.ghost{padding:6px 10px;border-radius:8px;border:1px solid var(--ring);color:var(--ink-2);font-size:.8rem}
+.ghost:hover{background:var(--surface)}
+h2{font-size:.95rem;font-weight:700;margin-bottom:2px}
+.sub{color:var(--muted);font-size:.8rem;margin-bottom:12px}
+.card{background:var(--surface);border:1px solid var(--ring);border-radius:14px;padding:16px}
+.tiles{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:18px 0 12px}
+.tile{background:var(--surface);border:1px solid var(--ring);border-radius:14px;padding:14px 16px}
+.tile .l{color:var(--ink-2);font-size:.8rem;display:flex;align-items:center;gap:7px}
+.tile .v{font-size:1.75rem;font-weight:650;margin-top:4px;letter-spacing:-.5px}
+.tile .d{color:var(--muted);font-size:.78rem;margin-top:2px}
+.dot{width:9px;height:9px;border-radius:50%;display:inline-block;flex:none}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:12px}
+.splitbar{display:flex;height:34px;gap:2px;border-radius:8px;overflow:hidden;margin:6px 0 10px}
+.splitbar div{display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:.82rem;min-width:0;white-space:nowrap}
+.legend{display:flex;gap:16px;flex-wrap:wrap;color:var(--ink-2);font-size:.82rem}
+.legend span{display:flex;align-items:center;gap:6px}
+.chart{position:relative;width:100%}
+.chart svg{display:block;width:100%;overflow:visible}
+.chart text{fill:var(--muted);font-size:11px;font-variant-numeric:tabular-nums}
+.tip{position:fixed;pointer-events:none;background:#0b0b0b;border:1px solid var(--ring);border-radius:10px;padding:8px 10px;font-size:.8rem;z-index:20;box-shadow:0 10px 30px rgba(0,0,0,.5);opacity:0;transition:opacity .1s;min-width:140px}
+.tip .h{font-weight:700;margin-bottom:4px}
+.tip .r{display:flex;align-items:center;gap:6px;justify-content:space-between}
+.tip .r span{display:flex;align-items:center;gap:6px;color:var(--ink-2)}
+.hbars{display:flex;flex-direction:column;gap:9px}
+.hb{display:grid;grid-template-columns:minmax(90px,38%) 1fr auto;align-items:center;gap:10px;font-size:.83rem}
+.hb .n{color:var(--ink-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hb .t{height:12px;position:relative}
+.hb .t i{position:absolute;left:0;top:0;bottom:0;border-radius:0 4px 4px 0;min-width:2px}
+.hb .v{color:var(--ink);font-variant-numeric:tabular-nums;font-weight:600;text-align:right;min-width:42px}
+.hb .v small{color:var(--muted);font-weight:500;margin-left:6px}
+.empty{color:var(--muted);font-size:.85rem;padding:10px 0}
+table{width:100%;border-collapse:collapse;font-size:.82rem}
+th{text-align:left;color:var(--muted);font-weight:600;padding:6px 8px;border-bottom:1px solid var(--axis);white-space:nowrap}
+td.nw{white-space:nowrap}
+td{padding:7px 8px;border-bottom:1px solid var(--grid);color:var(--ink-2);vertical-align:top}
+td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
+.badge{display:inline-flex;align-items:center;gap:6px;color:var(--ink);font-weight:600;white-space:nowrap}
+.scroll{overflow:auto}
+.note{color:var(--ink-2);font-size:.85rem;line-height:1.6}
+.note li{margin:4px 0 4px 18px}
+.note b{color:var(--ink)}
+.row{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.toggle{font-size:.78rem;color:var(--ink-2);border:1px solid var(--ring);border-radius:7px;padding:4px 8px}
+#login{max-width:380px;margin:12vh auto 0;padding:0 16px}
+#login .card{padding:26px}
+#login input[type=password]{width:100%;margin:14px 0 10px;padding:11px 12px;border-radius:10px;border:1px solid var(--axis);background:var(--page);outline:none}
+#login input[type=password]:focus{border-color:var(--accent)}
+#login .go{width:100%;padding:11px;border-radius:10px;background:var(--accent);font-weight:700;margin-top:10px}
+#login label{display:flex;gap:8px;align-items:center;color:var(--ink-2);font-size:.85rem}
+.err{color:#ff8a8a;font-size:.85rem;margin-top:10px;min-height:1.2em}
+.banner{background:#2a1f0a;border:1px solid #6b4a10;color:#fde7b0;border-radius:12px;padding:12px 14px;margin-top:16px;font-size:.88rem}
+@media (max-width:900px){.tiles{grid-template-columns:repeat(2,1fr)}.grid2,.grid3{grid-template-columns:1fr}.seg{margin-left:0;order:3;width:100%;overflow:auto}.seg button{flex:1}}
+@media (prefers-reduced-motion:reduce){.live b{animation:none}}
+</style>
+</head>
+<body>
+<div id="login" hidden>
+  <div class="card">
+    <div class="logo"><i>IO</i>TheIOGames <small>Analytics</small></div>
+    <p class="sub" style="margin-top:10px">Private dashboard. Enter the admin password (the <b>TIOG_ADMIN_KEY</b> you set in Netlify).</p>
+    <form id="lf"><input id="pw" type="password" autocomplete="current-password" placeholder="Admin password" aria-label="Admin password" required>
+      <label><input id="remember" type="checkbox"> Remember on this device</label>
+      <button class="go" type="submit">Open dashboard</button><div class="err" id="lerr"></div></form>
+  </div>
+</div>
+
+<div id="app" hidden>
+  <header class="top"><div class="in">
+    <div class="logo"><i>IO</i>TheIOGames <small>Visitor analytics</small></div>
+    <div class="seg" role="group" aria-label="Date range" id="ranges">
+      <button data-r="today">Today</button><button data-r="7d">7 days</button><button data-r="30d">30 days</button><button data-r="90d">90 days</button><button data-r="365d">1 year</button>
+    </div>
+    <div class="live" id="live"><b></b><span>Loading…</span></div>
+    <button class="ghost" id="refresh" title="Refresh now">↻ Refresh</button>
+    <button class="ghost" id="logout">Sign out</button>
+  </div></header>
+  <div class="wrap">
+    <div id="warn"></div>
+    <div class="tiles" id="tiles"></div>
+
+    <div class="card">
+      <div class="row"><div><h2>Humans vs bots</h2><div class="sub" id="splitSub"></div></div></div>
+      <div class="splitbar" id="split"></div>
+      <div class="legend" id="splitLegend"></div>
+    </div>
+
+    <div class="card" style="margin-top:12px">
+      <div class="row"><div><h2 id="trendTitle">Visits per day</h2><div class="sub">Every visit classified as human, bot or uncertain</div></div>
+        <button class="toggle" id="tableToggle" aria-pressed="false">Show table</button></div>
+      <div class="legend" style="margin-bottom:8px"><span><i class="dot" style="background:var(--human)"></i>Human</span><span><i class="dot" style="background:var(--bot)"></i>Bot</span><span><i class="dot" style="background:var(--unc)"></i>Uncertain</span></div>
+      <div class="chart" id="trend"></div>
+      <div class="scroll" id="trendTable" hidden></div>
+    </div>
+
+    <div class="grid2">
+      <div class="card"><h2>Most popular games</h2><div class="sub">Games started by human visitors · minutes played</div><div class="hbars" id="games"></div></div>
+      <div class="card"><h2>Pages visited</h2><div class="sub">Homepage and game pages viewed by humans</div><div class="hbars" id="pages"></div></div>
+    </div>
+    <div class="grid3">
+      <div class="card"><h2>Where visitors come from</h2><div class="sub">Source of human visits</div><div class="hbars" id="sourceTypes"></div><div style="height:14px"></div><div class="hbars" id="sources"></div></div>
+      <div class="card"><h2>Devices</h2><div class="sub">Human visits</div><div class="hbars" id="devices"></div><div style="height:14px"></div><div class="hbars" id="browsers"></div></div>
+      <div class="card"><h2>Countries</h2><div class="sub">Human visits (country only)</div><div class="hbars" id="countries"></div></div>
+    </div>
+    <div class="grid2">
+      <div class="card"><h2>Bot traffic by type</h2><div class="sub">What the detected bots were</div><div class="hbars" id="botCats"></div><div style="height:14px"></div><div class="hbars" id="botNames"></div></div>
+      <div class="card"><h2>Why visits were classified</h2><div class="sub">The rule that decided each visit</div><div class="scroll" id="reasons"></div></div>
+    </div>
+    <div class="card" style="margin-top:12px"><div class="row"><div><h2>Latest visits</h2><div class="sub">Today and yesterday · no personal data is stored</div></div><div class="seg" id="rf" style="margin-left:0"><button data-f="all" aria-pressed="true">All</button><button data-f="human">Human</button><button data-f="bot">Bot</button><button data-f="uncertain">Uncertain</button></div></div><div class="scroll" id="recent"></div></div>
+    <div class="card" style="margin-top:12px"><h2>How detection works (and its limits)</h2>
+      <div class="note"><ul>
+        <li><b>Every homepage request is logged at Netlify's edge</b>, including bots that never run JavaScript. Known crawlers, link-preview fetchers, AI crawlers, SEO tools, monitors and scripts are recognised by their user agent.</li>
+        <li><b>Human</b> = the page ran in a real browser <i>and</i> the visitor touched, clicked, typed or moved the mouse naturally. Browsing fast is never counted against anyone.</li>
+        <li><b>Bot</b> = a known bot user agent, an automated/headless browser (webdriver), no JavaScript with non-browser headers, or very frequent repeated requests from one network with no human interaction.</li>
+        <li><b>Uncertain</b> = could not be decided confidently: the page was requested but JavaScript never ran (instant bounce, blocker, or a simple bot), or the page was open with no interaction.</li>
+        <li>No detection is 100% accurate: clever bots can imitate people, and some people use blockers. Treat the numbers as good estimates.</li>
+        <li><b>Privacy:</b> no names, emails, IP addresses or fingerprints are stored. Networks are only compared within the same day using a salted hash that changes daily. Returning visitors are recognised by a random ID in the browser (skipped when Do Not Track / Global Privacy Control is on). Raw visit records are deleted after 90 days.</li>
+      </ul></div></div>
+  </div>
+</div>
+<div class="tip" id="tip" role="tooltip"></div>
+
+<script>
+const GAMES = {"chicken": ["Chicken.io", "🐔"], "cells": ["Cells.io", "🦠"], "hole": ["Hole.io", "🕳️"], "farm": ["Farmer.io", "🧑‍🌾"], "snake": ["Snake.io", "🐍"], "reaction": ["Reaction Test", "⚡"], "whack": ["Whack-a-Mole", "🔨"], "piano": ["Piano Tiles", "🎹"], "aim": ["Aim Trainer", "🎯"], "reflex": ["Reflex Challenge", "💥"], "g2048": ["2048", "🔢"], "colorswitch": ["Color Switch", "🌈"], "flappy": ["Flappy Challenge", "🐤"], "stack": ["Perfect Stack", "🧱"], "brick": ["Brick Breaker", "🧨"], "shooter": ["Space Shooter", "🚀"], "asteroid": ["Asteroid Field", "☄️"], "geometry": ["Geometry Rush", "🔷"], "slope": ["Slope Runner", "🟢"], "subway": ["Subway Escape", "🏃"], "bottle": ["Bottle Jump 3D", "🍶"], "basketball": ["Basketball Challenge", "🏀"], "targettoss": ["Target Toss", "🥏"], "minigolf": ["Mini Golf", "⛳"], "pool": ["Pool 8-Ball", "🎱"], "bowling": ["Bowling", "🎳"], "sudoku": ["Sudoku", "🧩"], "blockpuzzle": ["Block Puzzle", "🟦"], "wordscramble": ["Word Scramble", "🔤"], "mathswap": ["Math Swap", "➗"], "parking": ["Parking Jam", "🚗"], "quiz": ["The Impossible Quiz", "❓"], "clicker": ["Clicker Empire", "🏙️"], "penalty": ["Soccer Penalties", "⚽"], "tabletennis": ["Table Tennis", "🏓"], "tennis": ["Tennis Challenge", "🎾"], "slither": ["Slither Arena", "🐉"], "coop": ["Two Player Adventure", "🤖"], "sushi": ["Sushi Snake", "🍣"], "pirate": ["Pirate Royale", "🏴‍☠️"], "kart": ["Kart Clash", "🏎️"], "brainrot": ["Brainrot Heist", "🧠"], "hammer": ["Hammer Climb Challenge", "🔨"], "hotel": ["Hotel Simulator", "🏨"], "petstore": ["Pet Store Simulator", "🐶"], "style": ["Style Studio", "👗"], "fishing": ["Fishing Frenzy", "🎣"], "evolution": ["Creature Evolution", "🦎"], "paper": ["Paper Territory", "🟥"], "holearena": ["Hole Arena", "🌀"], "tower": ["Tower Balance", "🗼"], "bridge": ["Build a Bridge", "🌉"], "carstunt": ["Car Stunt Challenge", "🚙"], "skate": ["Skateboard Tricks", "🛹"], "rollrush": ["Roll Rush 3D", "⚽"], "stacksmash": ["Stack Smash 3D", "🔴"], "flappyjump": ["Flappy Jump", "🐥"], "shark": ["Shark.io", "🦈"]};
+const KEYS = ['human', 'bot', 'uncertain'], LABEL = { human: 'Human', bot: 'Bot', uncertain: 'Uncertain' }, COLOR = { human: 'var(--human)', bot: 'var(--bot)', uncertain: 'var(--unc)' };
+const $ = s => document.querySelector(s);
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const fmt = n => n >= 1e6 ? (n / 1e6).toFixed(1).replace(/\.0$/, '') + 'M' : n >= 1e4 ? (n / 1e3).toFixed(1).replace(/\.0$/, '') + 'K' : Number(n || 0).toLocaleString();
+const dur = s => { s = Math.round(s || 0); if (s < 60) return s + 's'; const m = Math.floor(s / 60); if (m < 60) return m + 'm ' + String(s % 60).padStart(2, '0') + 's'; return Math.floor(m / 60) + 'h ' + (m % 60) + 'm'; };
+let key = '', range = 'today', timer = 0, data = null;
+try { key = localStorage.getItem('tg_admin') || sessionStorage.getItem('tg_admin') || ''; range = localStorage.getItem('tg_range') || 'today'; } catch (e) {}
+
+function showLogin(msg) { $('#app').hidden = true; $('#login').hidden = false; $('#lerr').textContent = msg || ''; $('#pw').focus(); }
+$('#lf').addEventListener('submit', e => { e.preventDefault(); key = $('#pw').value.trim(); try { ($('#remember').checked ? localStorage : sessionStorage).setItem('tg_admin', key); } catch (er) {} load(true); });
+$('#logout').onclick = () => { try { localStorage.removeItem('tg_admin'); sessionStorage.removeItem('tg_admin'); } catch (e) {} key = ''; clearInterval(timer); showLogin(); };
+$('#refresh').onclick = () => load();
+document.querySelectorAll('#ranges button').forEach(b => b.onclick = () => { range = b.dataset.r; try { localStorage.setItem('tg_range', range); } catch (e) {} load(); });
+$('#tableToggle').onclick = () => { const on = $('#trendTable').hidden; $('#trendTable').hidden = !on; $('#trend').hidden = on; $('#tableToggle').textContent = on ? 'Show chart' : 'Show table'; $('#tableToggle').setAttribute('aria-pressed', on); };
+
+async function load(fromLogin) {
+  if (!key) return showLogin();
+  document.querySelectorAll('#ranges button').forEach(b => b.setAttribute('aria-pressed', b.dataset.r === range));
+  try {
+    const r = await fetch('/.netlify/functions/tg-stats?range=' + encodeURIComponent(range), { headers: { 'x-tg-key': key }, cache: 'no-store' });
+    if (r.status === 401) { try { localStorage.removeItem('tg_admin'); sessionStorage.removeItem('tg_admin'); } catch (e) {} return showLogin(fromLogin ? 'Wrong password.' : 'Please sign in.'); }
+    if (r.status === 503) { const j = await r.json(); return showLogin('Not set up yet: ' + j.message); }
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    data = await r.json();
+    $('#login').hidden = true; $('#app').hidden = false; render(data);
+    $('#live span').textContent = 'Live · updated ' + new Date(data.generatedAt).toLocaleTimeString();
+  } catch (e) {
+    if ($('#app').hidden) showLogin('Could not reach the analytics service (' + e.message + '). Is the site deployed with its functions?');
+    else $('#live span').textContent = 'Offline – retrying…';
+  }
+  clearInterval(timer); timer = setInterval(() => { if (!document.hidden) load(); }, 30000);
+}
+
+function tile(label, value, detail, color) { return `<div class="tile"><div class="l">${color ? `<i class="dot" style="background:${color}"></i>` : ''}${esc(label)}</div><div class="v">${esc(value)}</div><div class="d">${detail}</div></div>`; }
+
+function render(d) {
+  const T = d.totals, V = d.visitors, rl = { 1: 'today', 7: 'last 7 days', 30: 'last 30 days', 90: 'last 90 days', 365: 'last 12 months' }[d.range] || '';
+  $('#warn').innerHTML = T.visits === 0 ? `<div class="banner">No visits recorded for ${esc(rl)} yet. Open theiogames.com in another tab – your own visit should appear within about a minute.</div>` : '';
+  $('#tiles').innerHTML = [
+    tile('Total visits', fmt(T.visits), esc(rl)),
+    tile('Real humans', fmt(T.human), `${T.humanPct}% of visits`, COLOR.human),
+    tile('Bots', fmt(T.bot), `${T.botPct}% of visits`, COLOR.bot),
+    tile('Uncertain', fmt(T.uncertain), `${T.uncertainPct}% of visits`, COLOR.uncertain),
+    tile('Unique visitors', fmt(V.unique), `${fmt(V.human)} human · ${fmt(V.bot)} bot`),
+    tile('Returning visitors', fmt(V.returning), 'humans who came back on another day'),
+    tile('Online now', fmt(d.online.human + d.online.uncertain + d.online.bot), `active in the last 2 min · ${d.online.human} human · ${d.online.bot} bot`),
+    tile('Avg. time on site', dur(d.avgTimeSec), `real humans · ${dur(d.totalHumanSec)} in total`),
+  ].join('');
+  // segmented share bar
+  $('#splitSub').textContent = `${fmt(T.visits)} visits ${rl}`;
+  $('#split').innerHTML = T.visits ? KEYS.map(k => { const p = T[k] / T.visits * 100; return p > 0 ? `<div style="flex:${p};background:${COLOR[k]}" data-k="${k}">${p >= 9 ? Math.round(p) + '%' : ''}</div>` : ''; }).join('') : '<div style="flex:1;background:var(--surface-2)"></div>';
+  $('#splitLegend').innerHTML = KEYS.map(k => `<span><i class="dot" style="background:${COLOR[k]}"></i>${LABEL[k]} · ${fmt(T[k])} (${T[k + 'Pct']}%)</span>`).join('');
+  document.querySelectorAll('#split div[data-k]').forEach(el => hover(el, () => `<div class="h">${LABEL[el.dataset.k]}</div><div>${fmt(T[el.dataset.k])} visits · ${T[el.dataset.k + 'Pct']}%</div>`));
+  // trend
+  const rows = d.hours ? d.hours.map(h => ({ label: String(h.hour).padStart(2, '0') + ':00', short: h.hour % 3 === 0 ? String(h.hour).padStart(2, '0') : '', ...h }))
+    : d.days.map((x, i, a) => { const dt = new Date(x.day + 'T12:00:00'); const step = a.length > 60 ? 30 : a.length > 14 ? 7 : 1; return { label: dt.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' }), short: (a.length - 1 - i) % step === 0 ? dt.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) : '', ...x }; });
+  $('#trendTitle').textContent = d.hours ? 'Visits per hour today' : 'Visits per day';
+  columns($('#trend'), rows);
+  $('#trendTable').innerHTML = `<table><thead><tr><th>${d.hours ? 'Hour' : 'Day'}</th><th class="num">Human</th><th class="num">Bot</th><th class="num">Uncertain</th><th class="num">Total</th></tr></thead><tbody>${rows.map(r => `<tr><td>${esc(r.label)}</td><td class="num">${r.human}</td><td class="num">${r.bot}</td><td class="num">${r.uncertain}</td><td class="num">${r.human + r.bot + r.uncertain}</td></tr>`).join('')}</tbody></table>`;
+  // lists
+  bars($('#games'), d.games.map(g => ({ k: (GAMES[g.id] ? GAMES[g.id][1] + ' ' + GAMES[g.id][0] : g.id), v: g.plays, extra: g.minutes + ' min' })), COLOR.human, 'plays');
+  bars($('#pages'), d.pages.map(p => ({ k: p.k === '/' ? '🏠 Homepage' : (GAMES[p.k.slice(1)] ? GAMES[p.k.slice(1)][1] + ' ' + GAMES[p.k.slice(1)][0] : p.k), v: p.v })), COLOR.human, 'views');
+  bars($('#sourceTypes'), d.sourceTypes, COLOR.human, 'visits');
+  bars($('#sources'), d.sources.slice(0, 8), COLOR.human, 'visits');
+  bars($('#devices'), d.devices, COLOR.human, 'visits');
+  bars($('#browsers'), d.browsers.slice(0, 6), COLOR.human, 'visits');
+  bars($('#countries'), d.countries.slice(0, 12).map(c => ({ k: flag(c.k) + ' ' + c.k, v: c.v })), COLOR.human, 'visits');
+  bars($('#botCats'), d.botCats, COLOR.bot, 'visits');
+  bars($('#botNames'), d.botNames.slice(0, 8), COLOR.bot, 'visits');
+  $('#reasons').innerHTML = d.reasons.length ? `<table><thead><tr><th>Result</th><th>Rule</th><th class="num">Visits</th></tr></thead><tbody>${d.reasons.map(r => { const [c, w] = r.k.split('|'); return `<tr><td>${badge(c)}</td><td>${esc(w)}</td><td class="num">${fmt(r.v)}</td></tr>`; }).join('')}</tbody></table>` : '<div class="empty">No visits yet.</div>';
+  renderRecent();
+}
+let rf = 'all';
+document.querySelectorAll('#rf button').forEach(b => b.onclick = () => { rf = b.dataset.f; document.querySelectorAll('#rf button').forEach(x => x.setAttribute('aria-pressed', x === b)); renderRecent(); });
+function renderRecent() {
+  const list = (data ? data.recent : []).filter(v => rf === 'all' || v.cls === rf).slice(0, 25);
+  $('#recent').innerHTML = list.length ? `<table><thead><tr><th>Time</th><th>Result</th><th>Why</th><th>Device</th><th>Source</th><th>Games</th><th class="num">Time on site</th></tr></thead><tbody>${list.map(v => `<tr><td class="nw">${esc(new Date(v.t).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }))}</td><td class="nw">${badge(v.cls)}${v.ret ? ' <small style="color:var(--muted)">returning</small>' : ''}</td><td>${esc(v.why)}</td><td class="nw">${esc([v.dev, v.br].filter(Boolean).join(' · '))}${v.cc ? ' ' + flag(v.cc) : ''}</td><td class="nw">${esc(v.src)}</td><td>${esc(v.games.map(g => GAMES[g] ? GAMES[g][0] : g).join(', '))}</td><td class="num">${v.js ? dur(v.sec) : '–'}</td></tr>`).join('')}</tbody></table>` : '<div class="empty">No visits in this group yet.</div>';
+}
+const ICON = { human: '👤', bot: '🤖', uncertain: '❔' };
+function badge(c) { return `<span class="badge"><i class="dot" style="background:${COLOR[c]}"></i>${ICON[c] || ''} ${esc(LABEL[c] || c)}</span>`; }
+function flag(cc) { return /^[A-Z]{2}$/.test(cc || '') ? String.fromCodePoint(...[...cc].map(c => 127397 + c.charCodeAt(0))) : ''; }
+
+function bars(el, items, color, unit) {
+  if (!items || !items.length) { el.innerHTML = '<div class="empty">Nothing yet.</div>'; return; }
+  const max = Math.max(...items.map(i => i.v)) || 1;
+  el.innerHTML = items.map((i, n) => `<div class="hb" data-n="${n}"><div class="n" title="${esc(i.k)}">${esc(i.k)}</div><div class="t"><i style="width:${Math.max(1, i.v / max * 100)}%;background:${color}"></i></div><div class="v">${fmt(i.v)}${i.extra ? `<small>${esc(i.extra)}</small>` : ''}</div></div>`).join('');
+  el.querySelectorAll('.hb').forEach(r => { const i = items[+r.dataset.n]; hover(r, () => `<div class="h">${esc(i.k)}</div><div>${fmt(i.v)} ${unit}${i.extra ? ' · ' + esc(i.extra) : ''}</div>`); });
+}
+
+function niceStep(v) { const raw = Math.max(1, v / 4), p = Math.pow(10, Math.floor(Math.log10(raw))); for (const m of [1, 2, 5, 10]) if (m * p >= raw) return m * p; return 10 * p; }
+function columns(el, rows) {
+  const W = Math.max(320, el.clientWidth || 800), H = 240, L = 40, B = 26, Tp = 8, plotW = W - L - 8, plotH = H - B - Tp;
+  const tot = rows.map(r => r.human + r.bot + r.uncertain), step = niceStep(Math.max(1, ...tot)), nt = Math.ceil(Math.max(1, ...tot) / step), max = step * nt;
+  const band = plotW / rows.length, bw = Math.max(3, Math.min(24, band * 0.62));
+  let s = `<svg viewBox="0 0 ${W} ${H}" height="${H}" role="img" aria-label="Stacked columns of human, bot and uncertain visits">`;
+  for (let i = 0; i <= nt; i++) { const v = step * i, y = Tp + plotH - v / max * plotH; s += `<line x1="${L}" x2="${W - 8}" y1="${y}" y2="${y}" stroke="${i ? 'var(--grid)' : 'var(--axis)'}" stroke-width="1"/><text x="${L - 8}" y="${y + 4}" text-anchor="end">${fmt(v)}</text>`; }
+  rows.forEach((r, i) => {
+    const x = L + band * i + (band - bw) / 2; let y = Tp + plotH; const segs = KEYS.filter(k => r[k] > 0);
+    segs.forEach((k, j) => {
+      const h = r[k] / max * plotH, gap = j ? 2 : 0, hh = Math.max(0.5, h - gap), yy = y - h, top = j === segs.length - 1;
+      const rad = top ? Math.min(4, hh / 2, bw / 2) : 0;   // segment spans [yy, yy+hh]; the 2px gap sits below it
+      s += rad > 0 ? `<path d="M${x},${yy + hh} V${yy + rad} Q${x},${yy} ${x + rad},${yy} H${x + bw - rad} Q${x + bw},${yy} ${x + bw},${yy + rad} V${yy + hh} Z" fill="${COLOR[k]}"/>`
+        : `<rect x="${x}" y="${yy}" width="${bw}" height="${hh}" fill="${COLOR[k]}"/>`;
+      y -= h;
+    });
+    if (r.short) s += `<text x="${x + bw / 2}" y="${H - 8}" text-anchor="middle">${esc(r.short)}</text>`;
+    s += `<rect class="hit" data-i="${i}" x="${L + band * i}" y="${Tp}" width="${band}" height="${plotH}" fill="transparent"/>`;
+  });
+  el.innerHTML = s + '</svg>';
+  el.querySelectorAll('.hit').forEach(h => { const r = rows[+h.dataset.i]; hover(h, () => `<div class="h">${esc(r.label)}</div>${KEYS.map(k => `<div class="r"><span><i class="dot" style="background:${COLOR[k]}"></i>${LABEL[k]}</span><b>${fmt(r[k])}</b></div>`).join('')}<div class="r" style="margin-top:4px;border-top:1px solid var(--ring);padding-top:4px"><span>Total</span><b>${fmt(r.human + r.bot + r.uncertain)}</b></div>`); });
+}
+
+const tip = $('#tip');
+function hover(el, html) {
+  el.addEventListener('mouseenter', () => { tip.innerHTML = html(); tip.style.opacity = 1; });
+  el.addEventListener('mousemove', e => { const w = tip.offsetWidth, h = tip.offsetHeight; tip.style.left = Math.min(innerWidth - w - 8, e.clientX + 14) + 'px'; tip.style.top = Math.max(8, e.clientY - h - 12) + 'px'; });
+  el.addEventListener('mouseleave', () => { tip.style.opacity = 0; });
+}
+addEventListener('resize', () => { if (data) render(data); });
+load();
+</script>
+</body>
+</html>

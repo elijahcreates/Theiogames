@@ -1,2 +1,5 @@
 theiogames-site/
 theiogames-site.zip
+node_modules/
+public/
+.netlify/

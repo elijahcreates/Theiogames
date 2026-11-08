@@ -80,3 +80,22 @@ node tools/smoke.js         # opens every game and reports JS errors (add --mobi
 ## Sponsored banner
 
 The Edge Productions ad at the very top of the homepage is the `<aside id="edgeAd">` block in `src/head.html` (styles under "sponsored banner" in the same file). Edit the text/links there, or delete the block to remove the ad. It hides while a game is playing, and the ✕ hides it for the rest of that visit.
+
+## Visitor analytics: humans vs bots (private dashboard at `/admin`)
+
+Anonymous, privacy-friendly analytics that estimates how many visitors are **real humans**, **bots** or **uncertain**, with a dark-mode dashboard at `https://theiogames.com/admin`.
+
+**How it works**
+* `netlify/edge-functions/tg-edge.js` runs in front of the homepage and logs every page request, including bots that never run JavaScript. It also sets a 15-minute first-party cookie (`tg_rid`) so the page's script can confirm it really ran in a browser.
+* `src/analytics.js` (built into `index.html`) passively counts interactions (pointer, touch, keys, scroll), visible time, pages and games, and sends a few small events. It only switches on when the edge logger is present, so a manual drag-and-drop deploy stays silent.
+* `netlify/functions/tg.mjs` stores the events in **Netlify Blobs**. `netlify/functions/tg-stats.mjs` serves the dashboard numbers (it needs the admin password).
+* Classification rules are in `netlify/lib/classify.mjs`, and the known-bot list is in `netlify/lib/bots.mjs`. Human = real browser + natural interaction (fast browsing is never penalised). Bot = known bot user agent, webdriver/headless, no JS with non-browser headers, or request bursts with no human interaction. Uncertain = everything that can't be decided confidently.
+
+**Privacy:** no names, emails, IP addresses or fingerprints are stored. IPs are only used as a salted hash that changes daily, to spot bursts. A random browser ID (localStorage) recognises returning visitors and is skipped when Do Not Track / Global Privacy Control is on. Raw records are deleted after 90 days; daily summaries are kept for history.
+
+**Turning it on (one-time)**
+1. The site must be deployed **from Git** (Netlify → Site configuration → Build & deploy → *Link repository* → this repo). Drag-and-drop uploads can't include functions.
+2. In Netlify → Site configuration → Environment variables, add `TIOG_ADMIN_KEY` = a long random password (it protects the dashboard). Optional: `TIOG_TZ` (default `America/New_York`).
+3. Deploy, then open `https://theiogames.com/admin` and enter the password.
+
+**Testing locally:** `./tools/build.sh`, then `TG_LOCAL_STORE=/tmp/tg TIOG_ADMIN_KEY=testkey node tools/analytics-dev.mjs` (emulates Netlify on :8787), then `node tools/analytics-test.js` (simulated humans, bots and scripts; checks the classification).
