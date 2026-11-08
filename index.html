@@ -347,7 +347,7 @@ footer{text-align:center;color:var(--muted);font-size:.82rem;padding:10px 16px 3
     </div>
   </header>
   <main id="menu"></main>
-  <footer>© TheIOGames — every game is original, built into this page and runs right here. No downloads, no accounts.<br><b>Version 8 · 58 games · Cleaner homepage</b></footer>
+  <footer>© TheIOGames — every game is original, built into this page and runs right here. No downloads, no accounts.<br><b>Version 9 · 58 games · Faster Roll Rush</b></footer>
   <noscript><p style="text-align:center;padding:30px">Please enable JavaScript to play.</p></noscript>
 </div>
 
@@ -8328,7 +8328,7 @@ registerGame({
   create(E) {
     const ctx = E.ctx, fx = Fx(), ROW = 3;
     const B = { x: 0, y: 0, vx: 0, vy: 0, z: 2, roll: 0, fall: false, dead: false };
-    let rows = {}, t = 0, speed = 13, coins = 0, score = 0, camX = 0, camZ = -4, drag = null, msg = '', msgT = 0, level = 1, trail = [], over = false, shake = 0, lastLevel = 1;
+    let rows = {}, t = 0, speed = 20, coins = 0, score = 0, camX = 0, camZ = -4, drag = null, msg = '', msgT = 0, level = 1, trail = [], over = false, shake = 0, lastLevel = 1;
     const PAL = [['#f9a8d4', '#fbcfe8', '#9d174d'], ['#a5f3fc', '#cffafe', '#0e7490'], ['#fde68a', '#fef3c7', '#a16207'], ['#c4b5fd', '#ede9fe', '#5b21b6'], ['#86efac', '#dcfce7', '#15803d']];
     const SKY = [['#7dd3fc', '#f0abfc'], ['#fda4af', '#fef3c7'], ['#a5b4fc', '#f5d0fe'], ['#5eead4', '#e0f2fe'], ['#1e1b4b', '#7c3aed']];
     // track centre path: smooth curves that grow with distance
@@ -8360,12 +8360,12 @@ registerGame({
       update(dt) {
         t += dt; fx.update(dt); msgT -= dt;
         if (over) { B.vy -= 30 * dt; B.y += B.vy * dt; B.z += speed * dt * 0.4; return; }
-        speed = Math.min(30, 13 + B.z / 160);
+        speed = Math.min(50, 20 + B.z / 55);
         const i = Math.floor(B.z / ROW), rw = row(i);
         // steering
         let dir = (E.key('KeyD') || E.key('ArrowRight') ? 1 : 0) - (E.key('KeyA') || E.key('ArrowLeft') ? 1 : 0);
-        if (drag && drag.tx !== undefined) { B.vx += ((drag.tx - B.x) * 9 - B.vx) * Math.min(1, dt * 8); }
-        else B.vx += (dir * 12 - B.vx) * Math.min(1, dt * 6);
+        if (drag && drag.tx !== undefined) { B.vx += ((drag.tx - B.x) * 11 - B.vx) * Math.min(1, dt * 10); }
+        else B.vx += (dir * 15 - B.vx) * Math.min(1, dt * 8);
         // moving platform carries the ball
         const prevOff = rw.mv ? Math.sin((t - dt) * 1.4 + rw.ph) * rw.mv : 0, nowOff = rw.mv ? Math.sin(t * 1.4 + rw.ph) * rw.mv : 0;
         if (B.y <= 0.01 && rw.mv) B.x += nowOff - prevOff;
