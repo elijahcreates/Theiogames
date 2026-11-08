@@ -347,7 +347,7 @@ footer{text-align:center;color:var(--muted);font-size:.82rem;padding:10px 16px 3
     </div>
   </header>
   <main id="menu"></main>
-  <footer>© TheIOGames — every game is original, built into this page and runs right here. No downloads, no accounts.<br><b>Version 4 · 58 games · New loading screens</b></footer>
+  <footer>© TheIOGames — every game is original, built into this page and runs right here. No downloads, no accounts.<br><b>Version 5 · 58 games · Roll Rush jump fix</b></footer>
   <noscript><p style="text-align:center;padding:30px">Please enable JavaScript to play.</p></noscript>
 </div>
 
@@ -8385,7 +8385,7 @@ registerGame({
         if (B.y <= 0.01) {
           const off = Math.abs(B.x - rowX(rw, i)) > rw.w / 2 + 0.15;
           if (rw.gap || off) { B.y = -0.05; B.vy = -2; if (!over) { E.shake(4); return die(rw.gap ? 'Missed the jump!' : 'Rolled off the edge!'); } }
-          if (rw.ramp && B.z - i * ROW > 1.2) { B.vy = 11.5; B.y = 0.05; E.sound('jump'); fx.text(E.W / 2, E.H * 0.45, 'JUMP!', '#fde047', 26); }
+          if (rw.ramp && B.z - i * ROW > 1.2) { let ge = i + 1, seen = false; for (let k = i + 1; k < i + 10; k++) { if (row(k).gap) { seen = true; ge = k + 1; } else if (seen) break; } const need = Math.max(4, ge * ROW + 2.2 - B.z), T = need / speed; B.vy = Math.max(9, 30 * T / 2); B.y = 0.05; E.sound('jump'); fx.text(E.W / 2, E.H * 0.45, 'JUMP!', '#fde047', 26); }
         }
         // obstacles in current & next row
         for (const ii of [i, i + 1]) { const r2 = row(ii); if (!r2.block) continue; const zc = ii * ROW + 1.5; if (Math.abs(B.z - zc) < 0.9 && B.y < 1) { const bx = blockX(r2, ii); if (Math.abs(B.x - bx) < r2.block.w / 2 + 0.45) { const push = B.x >= bx ? 1 : -1; B.vx = push * 16; B.x = bx + push * (r2.block.w / 2 + 0.5); E.sound('bonk'); E.shake(8); fx.burst(E.W / 2, E.H * 0.7, 16, { col: ['#fff', '#fde047'], spd: 220 }); } } }
