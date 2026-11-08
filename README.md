@@ -33,13 +33,13 @@ The homepage opens with a hexagon “Hottest Games Right Now” section. To chan
 
 * Homepage sections:
   * featured carousel
-  * 2-Player, Recently Played and Favorites
+  * a 2-Player Games row
   * an All Games grid with category filters (Physics, Arcade, Endless, Puzzle, Brain Games, Sports, Multiplayer, Simulation, Creative, Popular and IO Arena)
 * Live search by game name, category or description
 * High scores and coins
 * 38 achievements and 3 daily challenges a day
 * A Rewards shop where coins buy site colour themes
-* Statistics for each game, and favorites
+* Statistics for each game
 * **3-minute pet reward:** a timer counts only while you are actively playing. It pauses when the game is paused, a menu or chooser is open, or the tab is hidden, and it carries over when you switch games. Each 3 minutes unlocks a random pet you don't already own, so duplicates can't happen. There are 33 original pets in 6 rarities, shown with an unlock animation and in MY PET COLLECTION.
 * **Saving:** everything is stored in `localStorage` on the current device only. The site explains on the homepage that progress doesn't sync across devices.
 

@@ -236,7 +236,6 @@ const ACH = [
   ['best', '🏆', 'Personal Best', 'Set a new high score'],
   ['best10', '🥇', 'Record Breaker', 'Set 10 new high scores'],
   ['twoP', '🤝', 'Couch Buddies', 'Finish a local 2-player match'],
-  ['fav', '❤️', 'Favorite', 'Add a game to your favorites'],
   ['daily', '📅', 'Daily Hero', 'Complete a daily challenge'],
   ['shop', '🎨', 'Stylish', 'Buy a cosmetic from the Rewards shop'],
   ['bottle10', '🍶', 'Flip Master', 'Land 10 bottle flips in one run'],
@@ -273,7 +272,7 @@ function checkAch() {
   c('time30', total >= 1800); c('time120', total >= 7200);
   c('c500', d.earned >= 500); c('c5000', d.earned >= 5000);
   c('pet1', d.pets.length >= 1); c('pet5', d.pets.length >= 5); c('pet15', d.pets.length >= 15); c('petall', d.pets.length >= PETS.length);
-  c('best', d.bests >= 1); c('best10', d.bests >= 10); c('twoP', d.twoP >= 1); c('fav', d.favs.length >= 1);
+  c('best', d.bests >= 1); c('best10', d.bests >= 10); c('twoP', d.twoP >= 1);
 }
 /* daily challenges */
 function dailyList() {
@@ -682,7 +681,7 @@ function teardown() {
   E.g = null; layer.textContent = ''; E.pads(null); hudL.innerHTML = ''; hudR.innerHTML = ''; lastL = lastR = '';
   $('#toast').textContent = ''; E.shakeAmt = 0;
 }
-const LOAD_TIPS = ['Play any game for 3 minutes to unlock a new pet 🐾', 'Beat your best score to complete a daily challenge 🏆', 'Tap the 🤍 on a game to add it to your favourites', 'Many games have a 👥 2-player mode – grab a friend!', 'Press P to pause and M to mute at any time', 'Coins from every game unlock rewards 🪙', 'New hottest games are marked with 🔥 TRENDING'];
+const LOAD_TIPS = ['Play any game for 3 minutes to unlock a new pet 🐾', 'Beat your best score to complete a daily challenge 🏆', 'Many games have a 👥 2-player mode – grab a friend!', 'Press P to pause and M to mute at any time', 'Coins from every game unlock rewards 🪙', 'New hottest games are marked with 🔥 TRENDING'];
 function showLoader(def) {
   const ld = $('#loader'), bar = ld.querySelector('.lbar i'), pct = ld.querySelector('.lpct');
   ld.querySelector('.lhx').style.backgroundImage = 'url(' + thumbURL(def) + ')';
@@ -890,9 +889,6 @@ function renderMenu() {
   const cats = document.createElement('div'); cats.className = 'cats';
   CATS.forEach(c => { const b = document.createElement('button'); b.className = 'cat' + (c === curCat ? ' on' : ''); b.textContent = c === 'Multiplayer' ? '👥 Multiplayer' : c; b.onclick = () => { curCat = c; store.set('cat', c); renderMenu(); const a = $('#allGames'); if (a) a.scrollIntoView({ behavior: 'smooth', block: 'start' }); }; cats.appendChild(b); });
   menuEl.appendChild(cats);
-  const rec = d.recent.map(gById).filter(Boolean), favs = d.favs.map(gById).filter(Boolean);
-  if (rec.length) menuEl.appendChild(section('🕹️ Recently Played', '', rec));
-  menuEl.appendChild(section('❤️ Favorite Games', '', favs, { empty: 'Tap the 🤍 on any game card to add it to your favorites.' }));
   menuEl.appendChild(section('👥 2-Player Games', 'local multiplayer on one device', GAMES.filter(g => g.twoP)));
   const list = curCat === 'All' ? GAMES : curCat === 'Popular' ? GAMES.filter(g => g.pop) : curCat === 'Multiplayer' ? GAMES.filter(g => g.twoP || (g.cats || []).indexOf('Multiplayer') >= 0) : GAMES.filter(g => (g.cats || []).indexOf(curCat) >= 0);
   const all = section(`🎮 ${curCat === 'All' ? 'All Games' : curCat}`, list.length + ' games', list, { grid: true }); all.id = 'allGames'; menuEl.appendChild(all);
@@ -923,7 +919,7 @@ function renderMenu() {
     tb.querySelector('#resetAll').onclick = () => { if (confirm('Delete ALL TheIOGames progress, scores, coins and pets saved on this device?')) { try { Object.keys(localStorage).filter(k => k.indexOf('tiog_') === 0).forEach(k => localStorage.removeItem(k)); } catch (e) {} location.reload(); } };
   }
   const note = document.createElement('div'); note.className = 'note';
-  note.innerHTML = '💾 <b>About your progress:</b> high scores, coins, pets, achievements, favorites and game saves are stored <b>locally in this browser on this device</b> (localStorage). They are not uploaded anywhere and are <b>not automatically synchronized across devices</b> or browsers. Clearing your browser data will erase them.';
+  note.innerHTML = '💾 <b>About your progress:</b> high scores, coins, pets, achievements and game saves are stored <b>locally in this browser on this device</b> (localStorage). They are not uploaded anywhere and are <b>not automatically synchronized across devices</b> or browsers. Clearing your browser data will erase them.';
   menuEl.appendChild(note);
   window.scrollTo(0, scrollY);
 }
