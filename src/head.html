@@ -54,6 +54,50 @@ button{cursor:pointer;border:0;background:none}
 a{color:var(--accent2)}
 
 /* ---------- header ---------- */
+/* ---------- sponsored banner: Edge Productions ---------- */
+.edgeAd{position:relative;display:flex;align-items:center;gap:14px;padding:10px max(16px,env(safe-area-inset-right)) 10px max(16px,env(safe-area-inset-left));background:radial-gradient(120% 220% at 0% 0%,#2b3bff55,transparent 55%),radial-gradient(120% 220% at 100% 100%,#ff4fc840,transparent 55%),linear-gradient(100deg,#060933,#0b1050 55%,#0d1257);border-bottom:1px solid rgba(140,200,255,.26);color:#fff;overflow:hidden}
+.edgeAd.hide{display:none}
+.edgeAd::after{content:'';position:absolute;inset:0;background:linear-gradient(105deg,transparent 40%,rgba(255,255,255,.08) 50%,transparent 60%);background-size:250% 100%;animation:eaShine 5s linear infinite;pointer-events:none}
+@keyframes eaShine{from{background-position:150% 0}to{background-position:-100% 0}}
+.edgeAd a{color:inherit;text-decoration:none}
+.ea-main{display:flex;align-items:center;gap:14px;flex:1;min-width:0}
+.ea-logo{width:44px;height:44px;flex:none;filter:drop-shadow(0 4px 14px rgba(138,47,224,.55))}
+.ea-brand{display:flex;flex-direction:column;line-height:.9;font-family:"Barlow Condensed","Arial Narrow","Roboto Condensed",system-ui,sans-serif;font-stretch:condensed;flex:none}
+.ea-brand b{font-size:1.55rem;font-weight:900;letter-spacing:1px}
+.ea-brand small{font-size:.66rem;font-weight:800;letter-spacing:3px;color:#7fd3ff}
+.ea-copy{display:flex;flex-direction:column;min-width:0;gap:2px}
+.ea-copy strong{font-size:1.05rem;font-weight:900;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ea-copy em{font-family:"Instrument Serif",Georgia,"Times New Roman",serif;font-style:italic;font-weight:400;font-size:1.2em;background:linear-gradient(100deg,#fff6dc 0%,#f3d58f 38%,#ffd0ec 76%,#ff9fdc 100%);-webkit-background-clip:text;background-clip:text;color:transparent}
+.ea-rot{position:relative;height:1.2em;overflow:hidden;font-size:.8rem;color:#7fd3ff;font-weight:700}
+.ea-rot i{position:absolute;left:0;top:0;font-style:normal;white-space:nowrap;opacity:0;animation:eaRot 9s infinite}
+.ea-rot i:nth-child(2){animation-delay:3s}.ea-rot i:nth-child(3){animation-delay:6s}
+@keyframes eaRot{0%{opacity:0;transform:translateY(100%)}4%,30%{opacity:1;transform:none}34%,100%{opacity:0;transform:translateY(-100%)}}
+.ea-price{display:flex;flex-direction:column;align-items:center;line-height:1;padding:6px 12px;border-radius:12px;background:rgba(255,255,255,.07);border:1px solid rgba(140,200,255,.26);flex:none}
+.ea-price small{font-size:.62rem;font-weight:800;letter-spacing:1px;color:#7fd3ff;text-transform:uppercase}
+.ea-price b{font-size:1.35rem;font-weight:900;background:linear-gradient(100deg,#fff6dc,#f3d58f 45%,#ff9fdc);-webkit-background-clip:text;background-clip:text;color:transparent}
+.ea-ctas{display:flex;gap:8px;flex:none;position:relative;z-index:1}
+.ea-btn{padding:9px 14px;border-radius:999px;font-weight:900;font-size:.85rem;white-space:nowrap;transition:transform .15s}
+.ea-btn:hover{transform:translateY(-1px) scale(1.03)}
+.ea-wa{background:linear-gradient(100deg,#2b3bff,#8a2fe0 60%,#ff4fc8);box-shadow:0 6px 18px rgba(43,59,255,.45)}
+.ea-site{background:rgba(255,255,255,.1);border:1px solid rgba(140,200,255,.35)}
+.ea-tag{position:absolute;left:8px;top:3px;font-size:.55rem;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:rgba(255,255,255,.45);pointer-events:none}
+.ea-x{position:relative;z-index:1;flex:none;width:26px;height:26px;border-radius:50%;color:rgba(255,255,255,.7);background:rgba(255,255,255,.08);font-size:.8rem}
+.ea-x:hover{background:rgba(255,255,255,.18);color:#fff}
+body.playing .edgeAd{display:none}
+@media (max-width:900px){ .ea-price{display:none} .ea-copy strong{white-space:normal;line-height:1.15} }
+@media (max-width:640px){
+  .edgeAd{gap:10px;padding-top:14px}
+  .ea-main{gap:10px}
+  .ea-logo{width:36px;height:36px}
+  .ea-brand{display:none}
+  .ea-copy strong{font-size:.92rem;white-space:normal}
+  .ea-rot{font-size:.7rem}
+  .ea-us{display:none}
+  .ea-site{display:none}
+  .ea-btn{padding:8px 11px;font-size:.78rem}
+}
+@media (prefers-reduced-motion:reduce){.edgeAd::after{animation:none}.ea-rot i{animation:none}.ea-rot i:first-child{opacity:1}}
+
 .tagline{text-align:center;padding:10px 12px 6px;font-weight:900;font-size:clamp(1rem,3.6vw,1.45rem);letter-spacing:.3px;background:linear-gradient(90deg,#ff5e8a,#ffcf4a,#34d399,#22d3ee,#a78bfa,#ff5e8a);background-size:300% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;animation:rainbow 8s linear infinite;filter:drop-shadow(0 2px 10px rgba(255,94,138,.25))}
 @keyframes rainbow{to{background-position:300% 0}}
 .top{display:flex;align-items:center;gap:12px;padding:10px max(16px,env(safe-area-inset-right)) 10px max(16px,env(safe-area-inset-left));position:sticky;top:0;z-index:30;background:color-mix(in srgb,var(--bg) 82%,transparent);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-bottom:1px solid rgba(255,255,255,.07)}
@@ -366,6 +410,18 @@ footer{text-align:center;color:var(--muted);font-size:.82rem;padding:10px 16px 3
 
 <div id="app">
 <div id="splash"><div class="sp-hexes"></div><div class="sp-core"><div class="sp-glow"></div><div class="sp-ring"><i></i><div class="sp-logo">IO</div></div><div class="sp-orbit"><b></b><b></b><b></b></div></div><h1 class="sp-title">The<span>IO</span>Games</h1><p class="sp-sub">Appropriate, Free &amp; Fun for All Ages!</p><div class="sp-bar"><i></i></div><div class="sp-pct">0%</div><p class="sp-tip"></p></div>
+  <!-- Sponsored banner: Edge Productions (edit or delete this block to change/remove the ad) -->
+  <aside id="edgeAd" class="edgeAd" aria-label="Sponsored: Edge Productions">
+    <a class="ea-main" href="https://edgeproductions.surge.sh/" target="_blank" rel="noopener sponsored">
+      <svg class="ea-logo" viewBox="0 0 64 64" aria-hidden="true"><defs><linearGradient id="eaG" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#2b3bff"/><stop offset=".55" stop-color="#8a2fe0"/><stop offset="1" stop-color="#ff4fc8"/></linearGradient></defs><circle cx="32" cy="32" r="30" fill="url(#eaG)"/><path d="M22 42L42 22M25 22h17v17" fill="none" stroke="#fff" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <span class="ea-brand"><b>EDGE</b><small>PRODUCTIONS</small></span>
+      <span class="ea-copy"><strong>Premium websites. <em>Affordable pricing.</em></strong><span class="ea-rot"><i>Video ads · Shabbos videos</i><i>Websites · Emails · Games</i><i>Graphics · Stickers · Design</i></span></span>
+      <span class="ea-price"><small>Full website</small><b>$129</b></span>
+    </a>
+    <span class="ea-ctas"><a class="ea-btn ea-wa" href="https://wa.me/18455147191?text=Hi%21%20I%20saw%20your%20ad%20on%20TheIOGames%20and%20I%27d%20like%20to%20get%20a%20project%20started." target="_blank" rel="noopener sponsored">💬 WhatsApp<span class="ea-us"> us</span></a><a class="ea-btn ea-site" href="https://edgeproductions.surge.sh/" target="_blank" rel="noopener sponsored">Visit site ↗</a></span>
+    <span class="ea-tag">Sponsored</span>
+    <button class="ea-x" type="button" aria-label="Hide this ad" title="Hide ad">✕</button>
+  </aside>
   <div class="tagline">Appropriate, Free &amp; Fun for All Ages!</div>
   <header class="top">
     <div class="logo" id="logo"><i>IO</i><b>The<span>IO</span>Games</b></div>

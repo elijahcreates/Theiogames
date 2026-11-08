@@ -76,3 +76,7 @@ node tools/smoke.js         # opens every game and reports JS errors (add --mobi
 ## Link previews (WhatsApp, iMessage, Facebook, X)
 
 `index.html` has Open Graph and Twitter Card tags that point to `https://theiogames.com/og-image.jpg` (1200 × 630). **Upload `og-image.jpg` next to `index.html`** (it's included in `theiogames-site.zip`). To regenerate the picture after changing games, run `./tools/build.sh && node tools/make-og-image.js`.
+
+## Sponsored banner
+
+The Edge Productions ad at the very top of the homepage is the `<aside id="edgeAd">` block in `src/head.html` (styles under "sponsored banner" in the same file). Edit the text/links there, or delete the block to remove the ad. It hides while a game is playing, and the ✕ hides it for the rest of that visit.
