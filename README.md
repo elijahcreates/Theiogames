@@ -72,3 +72,7 @@ Not verified:
 ./tools/build.sh            # writes index.html and syntax-checks it
 node tools/smoke.js         # opens every game and reports JS errors (add --mobile or --p2)
 ```
+
+## Link previews (WhatsApp, iMessage, Facebook, X)
+
+`index.html` has Open Graph and Twitter Card tags that point to `https://theiogames.com/og-image.jpg` (1200 × 630). **Upload `og-image.jpg` next to `index.html`** (it's included in `theiogames-site.zip`). To regenerate the picture after changing games, run `./tools/build.sh && node tools/make-og-image.js`.

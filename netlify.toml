@@ -21,3 +21,11 @@
   for = "/index.html"
   [headers.values]
     Cache-Control = "public, max-age=0, must-revalidate"
+
+# Link-preview image (WhatsApp / social cards): served as a normal public file.
+[[headers]]
+  for = "/og-image.jpg"
+  [headers.values]
+    Content-Type = "image/jpeg"
+    Cache-Control = "public, max-age=86400"
+    Access-Control-Allow-Origin = "*"
