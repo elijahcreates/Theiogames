@@ -862,34 +862,22 @@ function renderMenu() {
     menuEl.appendChild(section(`🔍 Results for “${esc(curQ)}”`, res.length + ' game' + (res.length === 1 ? '' : 's'), res, { grid: true, empty: 'No games found. Try “puzzle”, “sports”, “2 player” or a game name.' }));
     return;
   }
-  // hero
-  const hero = document.createElement('section'); hero.className = 'hero';
-  const feats = GAMES.filter(g => g.featured);
-  const feat = document.createElement('div'); feat.className = 'feat';
-  const setFeat = () => {
-    const g = feats[featIdx % feats.length]; if (!g) return;
-    feat.style.setProperty('--c1', g.c1); feat.style.setProperty('--c2', g.c2);
-    feat.innerHTML = `<div class="fe fehx" style="background-image:url(${thumbURL(g)})"></div><div class="ft"><small>⭐ FEATURED${g.twoP ? ' • 👥 2 PLAYERS' : ''}</small><h2>${esc(g.title)}</h2><p>${esc(g.desc)}</p><span class="go">▶ Play Now</span></div><div class="dots">${feats.map((x, i) => `<b class="${i === featIdx % feats.length ? 'on' : ''}"></b>`).join('')}</div>`;
-    feat.onclick = () => play(g);
-  };
-  setFeat(); featTimer = setInterval(() => { featIdx++; setFeat(); }, 6000);
-  const side = document.createElement('div'); side.className = 'side';
-  const d = Prof.d, totalT = Object.values(d.time).reduce((a, b) => a + b, 0);
-  const dd = Prof.daily(), ch = dailyList();
-  side.innerHTML = `<div class="box"><h3>🐾 Next pet reward <small>${d.pets.length}/${PETS.length} collected</small></h3>
-      <div class="petbar"><i style="width:${clamp(d.petTime / PET_SECS * 100, 0, 100)}%"></i></div>
-      <p style="font-size:.8rem;color:var(--muted);margin-top:6px">${d.pets.length >= PETS.length ? 'You collected every pet! 🎉' : `Play any game for <b style="color:#fff">${fmtTime(PET_SECS - d.petTime)}</b> more to unlock a new pet.`}</p></div>
-    <div class="box"><h3>📅 Daily Challenges <small>resets at midnight</small></h3><div class="chal">${ch.map(c => { const v = Math.min(c.goal, c.val(dd)), done = dd.done.indexOf(c.id) >= 0; return `<div class="c ${done ? 'done' : ''}"><i>${c.ic}</i><div>${esc(c.t)}<div class="pb"><u style="width:${v / c.goal * 100}%"></u></div></div><em>${done ? '✓ Done' : '+' + c.rw + ' 🪙'}</em></div>`; }).join('')}</div></div>
-    <div class="box"><div class="statrow"><div><b>${Object.keys(d.plays).length}</b><span>GAMES TRIED</span></div><div><b>${Math.floor(totalT / 60)}m</b><span>PLAY TIME</span></div><div><b>${Object.keys(d.ach).length}</b><span>ACHIEVEMENTS</span></div></div></div>`;
-  hero.appendChild(feat); hero.appendChild(side); menuEl.appendChild(hero);
   // 🔥 Hottest Games Right Now – edit HOTTEST (top of the homepage code) to change which games appear
   const hotDefs = HOTTEST.map(gById).filter(Boolean);
   if (hotDefs.length) { const hs = document.createElement('section'); hs.className = 'hottest'; hs.innerHTML = '<h2>🔥 Hottest Games Right Now</h2><p>The most-played, most exciting games on TheIOGames this week</p>'; const hb = document.createElement('div'); hb.className = 'honey'; hotDefs.forEach(d => hb.appendChild(card(d, 0, true))); hs.appendChild(hb); menuEl.appendChild(hs); requestAnimationFrame(() => layoutHoney(hb)); }
+  // compact progress strip: pet reward, daily challenges, games tried & achievements
+  const d = Prof.d, dd = Prof.daily(), ch = dailyList();
+  const strip = document.createElement('section'); strip.className = 'strip';
+  strip.innerHTML = `<div class="box petbox"><h3>🐾 Next pet <small>${d.pets.length}/${PETS.length}</small></h3>
+      <div class="petbar"><i style="width:${clamp(d.petTime / PET_SECS * 100, 0, 100)}%"></i></div>
+      <p>${d.pets.length >= PETS.length ? 'You collected every pet! 🎉' : `Play <b>${fmtTime(PET_SECS - d.petTime)}</b> more to unlock a new pet.`}</p></div>
+    <div class="box daily"><h3>📅 Daily Challenges <small>resets at midnight</small></h3><div class="chal">${ch.map(c => { const v = Math.min(c.goal, c.val(dd)), done = dd.done.indexOf(c.id) >= 0; return `<div class="c ${done ? 'done' : ''}"><i>${c.ic}</i><div>${esc(c.t)}<div class="pb"><u style="width:${v / c.goal * 100}%"></u></div></div><em>${done ? '✓' : '+' + c.rw + ' 🪙'}</em></div>`; }).join('')}</div></div>
+    <div class="box stats"><div class="statrow"><div><b>${Object.keys(d.plays).length}</b><span>GAMES TRIED</span></div><div><b>${Object.keys(d.ach).length}</b><span>ACHIEVEMENTS</span></div></div></div>`;
+  menuEl.appendChild(strip);
   // categories
   const cats = document.createElement('div'); cats.className = 'cats';
   CATS.forEach(c => { const b = document.createElement('button'); b.className = 'cat' + (c === curCat ? ' on' : ''); b.textContent = c === 'Multiplayer' ? '👥 Multiplayer' : c; b.onclick = () => { curCat = c; store.set('cat', c); renderMenu(); const a = $('#allGames'); if (a) a.scrollIntoView({ behavior: 'smooth', block: 'start' }); }; cats.appendChild(b); });
   menuEl.appendChild(cats);
-  menuEl.appendChild(section('👥 2-Player Games', 'local multiplayer on one device', GAMES.filter(g => g.twoP)));
   const list = curCat === 'All' ? GAMES : curCat === 'Popular' ? GAMES.filter(g => g.pop) : curCat === 'Multiplayer' ? GAMES.filter(g => g.twoP || (g.cats || []).indexOf('Multiplayer') >= 0) : GAMES.filter(g => (g.cats || []).indexOf(curCat) >= 0);
   const all = section(`🎮 ${curCat === 'All' ? 'All Games' : curCat}`, list.length + ' games', list, { grid: true }); all.id = 'allGames'; menuEl.appendChild(all);
   // progression tabs
@@ -912,9 +900,9 @@ function renderMenu() {
       d.theme = t[0]; Prof.save(); renderMenu();
     });
   } else {
-    const rows = GAMES.filter(g => d.plays[g.id]).sort((a, b) => (d.time[b.id] || 0) - (d.time[a.id] || 0));
-    tb.innerHTML = `<h3>📊 Game Statistics <small>${Object.values(d.plays).reduce((a, b) => a + b, 0)} sessions • ${Math.floor(totalT / 60)} min played • ${fmt(d.earned)} coins earned</small></h3>` +
-      (rows.length ? `<div style="overflow:auto"><table class="statsTable"><tr><th>Game</th><th>Plays</th><th>Time</th><th>Best</th></tr>${rows.map(g => { const b = store.get('best_' + g.id, 0); return `<tr><td>${g.emoji} ${esc(g.title)}</td><td>${d.plays[g.id]}</td><td>${fmtTime(d.time[g.id] || 0)}</td><td>${b ? esc(g.fmtScore ? g.fmtScore(b) : fmt(b)) : '—'}</td></tr>`; }).join('')}</table></div>` : '<div class="empty">Play some games to see your statistics here.</div>') +
+    const rows = GAMES.filter(g => d.plays[g.id]).sort((a, b) => (d.plays[b.id] || 0) - (d.plays[a.id] || 0));
+    tb.innerHTML = `<h3>📊 Game Statistics <small>${Object.values(d.plays).reduce((a, b) => a + b, 0)} sessions • ${fmt(d.earned)} coins earned</small></h3>` +
+      (rows.length ? `<div style="overflow:auto"><table class="statsTable"><tr><th>Game</th><th>Plays</th><th>Best</th></tr>${rows.map(g => { const b = store.get('best_' + g.id, 0); return `<tr><td>${g.emoji} ${esc(g.title)}</td><td>${d.plays[g.id]}</td><td>${b ? esc(g.fmtScore ? g.fmtScore(b) : fmt(b)) : '—'}</td></tr>`; }).join('')}</table></div>` : '<div class="empty">Play some games to see your statistics here.</div>') +
       `<p style="margin-top:12px"><button class="cat" id="resetAll">🗑️ Reset all progress on this device</button></p>`;
     tb.querySelector('#resetAll').onclick = () => { if (confirm('Delete ALL TheIOGames progress, scores, coins and pets saved on this device?')) { try { Object.keys(localStorage).filter(k => k.indexOf('tiog_') === 0).forEach(k => localStorage.removeItem(k)); } catch (e) {} location.reload(); } };
   }

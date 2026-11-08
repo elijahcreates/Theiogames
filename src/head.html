@@ -83,6 +83,15 @@ main{max-width:1320px;margin:auto;padding:0 max(16px,env(safe-area-inset-left)) 
 .chal .c .pb u{display:block;height:100%;background:var(--good)}
 .chal .c.done{opacity:.65}
 .chal .c em{font-style:normal;font-weight:800;color:var(--gold);font-size:.8rem;white-space:nowrap}
+.strip{display:grid;grid-template-columns:1fr 2.2fr .9fr;gap:12px;margin-top:16px}
+.strip .box{padding:12px 14px;border-radius:16px}
+.strip h3{font-size:.92rem;margin-bottom:8px}
+.strip .petbox p{font-size:.78rem;color:var(--muted);margin-top:6px}
+.strip .petbox p b{color:#fff}
+.strip .chal{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.strip .chal .c{padding:6px 8px;font-size:.78rem;gap:8px}
+.strip .stats{display:flex;align-items:center}
+.strip .statrow{grid-template-columns:1fr 1fr;width:100%}
 
 .cats{display:flex;gap:8px;overflow-x:auto;padding:16px 2px 6px;scrollbar-width:none;-webkit-overflow-scrolling:touch}
 .cats::-webkit-scrollbar{display:none}
@@ -303,7 +312,7 @@ footer{text-align:center;color:var(--muted);font-size:.82rem;padding:10px 16px 3
 #reward .rr{font-weight:900;letter-spacing:1.5px}
 .confetti{position:fixed;width:10px;height:14px;top:-20px;z-index:101;pointer-events:none;animation:fall linear forwards}
 @keyframes fall{to{transform:translateY(110vh) rotate(720deg)}}
-@media (max-width:860px){ #menu{display:flex;flex-direction:column} .hero{display:contents} .hero>.feat{order:-2;margin-top:18px;min-height:230px;display:flex;align-items:flex-end;padding:26px 34% 34px 26px} .hottest{order:-1} .hero>.side{margin-top:18px} .feat .ft{position:relative;left:0;right:0;bottom:0} }
+@media (max-width:860px){ .strip{grid-template-columns:1fr 1fr} .strip .daily{grid-column:1 / -1;order:-1} }
 @media (max-width:640px){
   .top{flex-wrap:wrap}
   .search{order:3;flex-basis:100%;max-width:none}
@@ -313,7 +322,8 @@ footer{text-align:center;color:var(--muted);font-size:.82rem;padding:10px 16px 3
   .row{grid-auto-columns:minmax(160px,170px)}
   .art{height:104px;font-size:52px}
   .feat .fe{right:3%;font-size:96px;opacity:.9}
-  .hero>.feat{padding:22px 18px 34px}
+  .strip{grid-template-columns:1fr}
+  .strip .chal{grid-template-columns:1fr}
   .feat .fe{opacity:.35}
   #hudR{width:150px;font-size:.74rem;padding:6px 8px}
   #hudR .br:nth-child(n+7){display:none}
@@ -347,7 +357,7 @@ footer{text-align:center;color:var(--muted);font-size:.82rem;padding:10px 16px 3
     </div>
   </header>
   <main id="menu"></main>
-  <footer>© TheIOGames — every game is original, built into this page and runs right here. No downloads, no accounts.<br><b>Version 9 · 58 games · Faster Roll Rush</b></footer>
+  <footer>© TheIOGames — every game is original, built into this page and runs right here. No downloads, no accounts.<br><b>Version 10 · 58 games · All hexagons</b></footer>
   <noscript><p style="text-align:center;padding:30px">Please enable JavaScript to play.</p></noscript>
 </div>
 

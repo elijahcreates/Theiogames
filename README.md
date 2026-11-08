@@ -32,8 +32,6 @@ The homepage opens with a hexagon “Hottest Games Right Now” section. To chan
 ## Site features
 
 * Homepage sections:
-  * featured carousel
-  * a 2-Player Games row
   * an All Games grid with category filters (Physics, Arcade, Endless, Puzzle, Brain Games, Sports, Multiplayer, Simulation, Creative, Popular and IO Arena)
 * Live search by game name, category or description
 * High scores and coins
