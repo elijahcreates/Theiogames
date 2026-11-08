@@ -764,7 +764,7 @@ function renderHud() {
   let b = '';
   if (h.board) {
     b = `<div class="bt">${esc(h.boardTitle || 'LEADERBOARD')}</div>`;
-    h.board.forEach((r, i) => { b += `<div class="br${r.me ? ' me' : ''}"><i>${r.rank || i + 1}</i><span>${esc(r.n)}</span><b>${r.s}</b></div>`; });
+    h.board.forEach((r, i) => { b += `<div class="br${r.me ? ' me' : ''}"><i>${r.rank || i + 1}</i><span>${r.col ? `<em class="bdot" style="background:${r.col}"></em>` : ''}${esc(r.n)}</span><b>${r.s}</b></div>`; });
   }
   if (b !== lastR) { hudR.innerHTML = b; lastR = b; }
 }

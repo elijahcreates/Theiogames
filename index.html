@@ -98,6 +98,7 @@ body.playing .edgeAd{display:none}
 }
 @media (prefers-reduced-motion:reduce){.edgeAd::after{animation:none}.ea-rot i{animation:none}.ea-rot i:first-child{opacity:1}}
 
+.bdot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:5px;vertical-align:middle;box-shadow:0 0 0 1px rgba(255,255,255,.5)}
 .tagline{text-align:center;padding:10px 12px 6px;font-weight:900;font-size:clamp(1rem,3.6vw,1.45rem);letter-spacing:.3px;background:linear-gradient(90deg,#ff5e8a,#ffcf4a,#34d399,#22d3ee,#a78bfa,#ff5e8a);background-size:300% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;animation:rainbow 8s linear infinite;filter:drop-shadow(0 2px 10px rgba(255,94,138,.25))}
 @keyframes rainbow{to{background-position:300% 0}}
 .top{display:flex;align-items:center;gap:12px;padding:10px max(16px,env(safe-area-inset-right)) 10px max(16px,env(safe-area-inset-left));position:sticky;top:0;z-index:30;background:color-mix(in srgb,var(--bg) 82%,transparent);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-bottom:1px solid rgba(255,255,255,.07)}
@@ -1248,7 +1249,7 @@ function renderHud() {
   let b = '';
   if (h.board) {
     b = `<div class="bt">${esc(h.boardTitle || 'LEADERBOARD')}</div>`;
-    h.board.forEach((r, i) => { b += `<div class="br${r.me ? ' me' : ''}"><i>${r.rank || i + 1}</i><span>${esc(r.n)}</span><b>${r.s}</b></div>`; });
+    h.board.forEach((r, i) => { b += `<div class="br${r.me ? ' me' : ''}"><i>${r.rank || i + 1}</i><span>${r.col ? `<em class="bdot" style="background:${r.col}"></em>` : ''}${esc(r.n)}</span><b>${r.s}</b></div>`; });
   }
   if (b !== lastR) { hudR.innerHTML = b; lastR = b; }
 }
@@ -2050,9 +2051,17 @@ function createSnake(E) {
     const sp = thick(m) * 0.62; s.pts = []; const n = segs(m); for (let i = 0; i < n; i++) s.pts.push({ x: p.x - Math.cos(ang) * i * sp, y: p.y - Math.sin(ang) * i * sp });
   }
   function recolor(s, hue) { s.hue = hue; s.c1 = hsl(hue, 85, 54); s.c2 = hsl(hue, 85, 44); s.glow = E.glow(hue); }
-  function make(ai, name) { const s = { ai, name, aggr: Math.random(), pts: [], dead: true, m: 10, prot: 0 }; recolor(s, irand(0, 359)); snakes.push(s); return s; }
+  // every rival gets its own two-tone pattern so you can tell who's who (green is reserved for you)
+  const SKINS = [['#ef4444', '#7f1d1d', 0], ['#f97316', '#fde68a', 25], ['#facc15', '#a16207', 50], ['#3b82f6', '#1e3a8a', 220], ['#22d3ee', '#ffffff', 190], ['#a855f7', '#3b0764', 275],
+    ['#ec4899', '#fbcfe8', 320], ['#f1f5f9', '#94a3b8', 210], ['#374151', '#f97316', 25], ['#92400e', '#fbbf24', 35], ['#dc2626', '#ffffff', 355], ['#1d4ed8', '#fde047', 230]];
+  function reskin(s) {
+    const used = new Set(snakes.filter(o => o !== s && o.ai && o.skin !== undefined).map(o => o.skin));
+    const free = SKINS.map((_, i) => i).filter(i => !used.has(i)), k = free.length ? pick(free) : irand(0, SKINS.length - 1), sk = SKINS[k];
+    s.skin = k; s.c1 = sk[0]; s.c2 = sk[1]; s.hue = sk[2]; s.glow = E.glow(sk[2]);
+  }
+  function make(ai, name) { const s = { ai, name, aggr: Math.random(), pts: [], dead: true, m: 10, prot: 0 }; if (ai) reskin(s); else recolor(s, 150); snakes.push(s); return s; }
   function newFood(f) { const a = rand(0, TAU), d = Math.sqrt(Math.random()) * (ARENA - 70); f.x = Math.cos(a) * d; f.y = Math.sin(a) * d; f.hue = irand(0, 359); f.v = Math.random() < 0.08 ? 3 : 1; f.r = f.v === 3 ? 7.5 : 4.5; f.drop = false; return f; }
-  player = make(false, 'You'); recolor(player, 150); init(player, 10);
+  player = make(false, 'You'); recolor(player, 140); player.c2 = '#bef264'; init(player, 10);
   const nm = BOT_NAMES.slice().sort(() => Math.random() - 0.5);
   for (let i = 0; i < AI_N; i++) { const s = make(true, nm[i]); init(s, 10 + Math.pow(Math.random(), 2) * 70); }
   for (let i = 0; i < FOOD_N; i++) foods.push(newFood({}));
@@ -2096,7 +2105,7 @@ function createSnake(E) {
   function update(dt) {
     time += dt;
     for (const s of snakes) {
-      if (s.dead) { if (s.ai) { s.respawn -= dt; if (s.respawn <= 0) { recolor(s, irand(0, 359)); init(s, 10 + Math.random() * 25); } } continue; }
+      if (s.dead) { if (s.ai) { s.respawn -= dt; if (s.respawn <= 0) { reskin(s); init(s, 10 + Math.random() * 25); } } continue; }
       if (s.prot > 0) s.prot -= dt;
       if (s === player) { if (!over) { const d = E.dir(); if (d.mag > 0.08) s.target = Math.atan2(d.y, d.x); s.boost = E.boost() && s.m > 14; } }
       else think(s, dt);
@@ -2166,7 +2175,7 @@ function createSnake(E) {
   }
   function hud() {
     const alive = snakes.filter(s => !s.dead).sort((a, b) => b.m - a.m), idx = alive.indexOf(player);
-    const board = alive.slice(0, 8).map(s => ({ n: s.name, s: fmt(s.m * 10), me: s === player })); if (idx >= 8) board.push({ rank: idx + 1, n: 'You', s: fmt(player.m * 10), me: true });
+    const board = alive.slice(0, 8).map(s => ({ n: s.name, s: fmt(s.m * 10), me: s === player, col: s.c1 })); if (idx >= 8) board.push({ rank: idx + 1, n: 'You', s: fmt(player.m * 10), me: true });
     return { stats: [['Length', fmt(player.m * 10)], ['Rank', idx >= 0 ? '#' + (idx + 1) : '—'], ['Best', fmt(Math.max(E.best(), player.peak * 10))]], board, boardTitle: 'LEADERBOARD' };
   }
   return { update, draw, hud };
