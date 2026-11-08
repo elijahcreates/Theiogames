@@ -800,7 +800,7 @@ E.onKey = (code, key) => {
 
 /* ------------------------------ homepage ------------------------------ */
 /* ===== EDIT THIS LIST to change the 🔥 Hottest Games Right Now section (use game ids) ===== */
-const HOTTEST = ['rollrush', 'stacksmash', 'bottle', 'flappyjump', 'slope', 'snake', 'shark'];
+const HOTTEST = ['hammer', 'rollrush', 'stacksmash', 'bottle', 'flappyjump', 'slope', 'snake', 'shark'];
 const CATS = ['All', 'Popular', 'Multiplayer', 'Physics', 'Arcade', 'Endless', 'Puzzle', 'Brain Games', 'Sports', 'Simulation', 'Creative', 'IO Arena'];
 let curCat = store.get('cat', 'All'), curQ = '', featIdx = 0, featTimer = 0, homeTab = 'pets';
 const menuEl = $('#menu');
@@ -838,7 +838,7 @@ function layoutHoney(box) {
   const target = W < 520 ? 160 : W < 900 ? 170 : 185; let cols = Math.max(2, Math.floor((W + gap) / (target + gap)));
   let w = Math.min(215, (W - gap * (cols - 1) - (n > cols ? 0 : 0)) / cols), h = w * 1.1547; const step = h * 0.75 + gap * 0.87;
   let i = 0, row = 0; const rowsW = cols * w + (cols - 1) * gap, ox = (W - rowsW) / 2;
-  while (i < n) { const odd = row % 2 === 1, cnt = odd ? cols - 1 : cols; for (let k = 0; k < cnt && i < n; k++, i++) { const el = items[i]; el.style.setProperty('--w', w + 'px'); el.style.left = (ox + k * (w + gap) + (odd ? (w + gap) / 2 : 0)) + 'px'; el.style.top = (row * step) + 'px'; } row++; }
+  while (i < n) { const odd = row % 2 === 1, cnt = odd ? cols - 1 : cols, rem = n - i, sh = rem < cnt ? Math.floor((cnt - rem) / 2) * (w + gap) : 0; for (let k = 0; k < cnt && i < n; k++, i++) { const el = items[i]; el.style.setProperty('--w', w + 'px'); el.style.left = (ox + sh + k * (w + gap) + (odd ? (w + gap) / 2 : 0)) + 'px'; el.style.top = (row * step) + 'px'; } row++; }
   box.style.height = ((row - 1) * step + h + 6) + 'px';
 }
 let honeyT = 0; window.addEventListener('resize', () => { clearTimeout(honeyT); honeyT = setTimeout(() => document.querySelectorAll('.honey').forEach(layoutHoney), 120); });
