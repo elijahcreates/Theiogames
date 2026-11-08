@@ -33,7 +33,7 @@ The homepage opens with a hexagon “Hottest Games Right Now” section. To chan
 
 * Homepage sections:
   * featured carousel
-  * Trending, Most Popular, New, 2-Player, Recently Played and Favorites
+  * 2-Player, Recently Played and Favorites
   * an All Games grid with category filters (Physics, Arcade, Endless, Puzzle, Brain Games, Sports, Multiplayer, Simulation, Creative, Popular and IO Arena)
 * Live search by game name, category or description
 * High scores and coins

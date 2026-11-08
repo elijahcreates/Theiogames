@@ -347,7 +347,7 @@ footer{text-align:center;color:var(--muted);font-size:.82rem;padding:10px 16px 3
     </div>
   </header>
   <main id="menu"></main>
-  <footer>© TheIOGames — every game is original, built into this page and runs right here. No downloads, no accounts.<br><b>Version 6 · 58 games · Hammer Climb is hot</b></footer>
+  <footer>© TheIOGames — every game is original, built into this page and runs right here. No downloads, no accounts.<br><b>Version 7 · 58 games · Cleaner homepage</b></footer>
   <noscript><p style="text-align:center;padding:30px">Please enable JavaScript to play.</p></noscript>
 </div>
 
@@ -1292,11 +1292,6 @@ function renderMenu() {
   const rec = d.recent.map(gById).filter(Boolean), favs = d.favs.map(gById).filter(Boolean);
   if (rec.length) menuEl.appendChild(section('🕹️ Recently Played', '', rec));
   menuEl.appendChild(section('❤️ Favorite Games', '', favs, { empty: 'Tap the 🤍 on any game card to add it to your favorites.' }));
-  menuEl.appendChild(section('⭐ Featured Games', 'hand-picked', GAMES.filter(g => g.featured)));
-  menuEl.appendChild(section('🔥 Trending Games', 'hot right now', GAMES.filter(g => g.hot)));
-  const pop = GAMES.filter(g => g.pop).sort((a, b) => (d.plays[b.id] || 0) - (d.plays[a.id] || 0));
-  menuEl.appendChild(section('🏆 Most Popular', '', pop));
-  menuEl.appendChild(section('🆕 New Games', '', GAMES.filter(g => g.isNew)));
   menuEl.appendChild(section('👥 2-Player Games', 'local multiplayer on one device', GAMES.filter(g => g.twoP)));
   const list = curCat === 'All' ? GAMES : curCat === 'Popular' ? GAMES.filter(g => g.pop) : curCat === 'Multiplayer' ? GAMES.filter(g => g.twoP || (g.cats || []).indexOf('Multiplayer') >= 0) : GAMES.filter(g => (g.cats || []).indexOf(curCat) >= 0);
   const all = section(`🎮 ${curCat === 'All' ? 'All Games' : curCat}`, list.length + ' games', list, { grid: true }); all.id = 'allGames'; menuEl.appendChild(all);
