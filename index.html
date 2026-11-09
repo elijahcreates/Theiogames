@@ -6930,6 +6930,10 @@ registerGame({
             const vx2 = (np.x - ox) / h * 0.3, vy2 = (np.y - oy) / h * 0.3, sp = Math.hypot(vx2, vy2), mx = 360; body.vx = sp > mx ? vx2 / sp * mx : vx2; body.vy = sp > mx ? vy2 / sp * mx : vy2; body.x = np.x; body.y = np.y;
           }
           head.x = hx; head.y = hy; touchT = (blocked || nearest(hx, hy, HR + 4)) ? 0 : touchT + h;
+          // safety: the hammer can never sit on the far side of a floor/wall (snap it back to our side)
+          if (ghost <= 0) { let lx = body.x, ly = body.y; for (let k = 1; k <= 12; k++) { const tx = body.x + (head.x - body.x) * k / 12, ty = body.y + (head.y - body.y) * k / 12; if (insideSolid(tx, ty)) { head.x = lx; head.y = ly; contact = false; break; } lx = tx; ly = ty; } }
+          // safety: if the pot ever ends up inside a block, lift it out on top
+          if (insideSolid(body.x, body.y)) { let up = 0; while (up < 400 && insideSolid(body.x, body.y - up)) up += 4; body.y -= up + BR + 2; body.vx = 0; body.vy = 0; head.x = body.x + 40; head.y = body.y - 20; }
           if (grounded > 0 && !blocked) { body.vx *= Math.exp(-7 * h); } grounded -= h;
           // keep the head within reach after the body moved
           const ddx = head.x - body.x, ddy = head.y - body.y, dd = Math.hypot(ddx, ddy); if (dd > LMAX + 4) { head.x = body.x + ddx / dd * LMAX; head.y = body.y + ddy / dd * LMAX; }
