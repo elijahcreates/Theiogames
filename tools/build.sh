@@ -6,7 +6,7 @@ cd "$(dirname "$0")/.."
 python3 - <<'PY'
 import re
 h=open('index.html').read()
-s=h[h.index('<script>')+8:h.rindex('</script>')]
+end=h.find('</script>\n<!-- Cloudflare'); s=h[h.index('<script>')+8:(end if end>0 else h.rindex('</script>'))]
 open('/tmp/_tiog_check.js','w').write(s)
 PY
 node --check /tmp/_tiog_check.js && echo "OK syntax, $(wc -c < index.html) bytes"

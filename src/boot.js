@@ -30,5 +30,6 @@ renderMenu();
 route();
 })();
 </script>
+<!-- Cloudflare Web Analytics --><script type='module' src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "9d3d3dfa9ca541c0ae56618ca5021d56"}'></script><!-- End Cloudflare Web Analytics -->
 </body>
 </html>
