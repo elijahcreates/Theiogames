@@ -13,8 +13,6 @@ GAMES.forEach(g => { if (LEGACY_META[g.id]) Object.assign(g, LEGACY_META[g.id]);
 const ORDER = ["brainrot", "bottle", "kart", "pirate", "sushi", "style", "hammer", "hotel", "petstore", "coop", "subway", "slope", "basketball", "pool", "minigolf", "bowling", "penalty", "tabletennis", "tennis", "stack", "geometry", "colorswitch", "flappy", "shooter", "brick", "asteroid", "reflex", "slither", "holearena", "paper", "evolution", "fishing", "clicker", "carstunt", "skate", "tower", "bridge", "targettoss", "g2048", "blockpuzzle", "parking", "sudoku", "mathswap", "quiz", "wordscramble", "reaction", "whack", "piano", "aim", "hole", "farm", "chicken", "snake", "cells"];
 GAMES.sort((a, b) => { const ia = ORDER.indexOf(a.id), ib = ORDER.indexOf(b.id); return (ia < 0 ? 999 : ia) - (ib < 0 ? 999 : ib); });
 window.TheIOGames = { registerGame, engine: E, games: GAMES };
-// sponsored banner close button (hidden for the rest of this visit only)
-(function () { const ad = document.getElementById('edgeAd'); if (!ad) return; try { if (sessionStorage.getItem('tiog_ad_hidden') === '1') ad.classList.add('hide'); } catch (e) {} const x = ad.querySelector('.ea-x'); if (x) x.addEventListener('click', () => { ad.classList.add('hide'); try { sessionStorage.setItem('tiog_ad_hidden', '1'); } catch (e) {} }); })();
 renderMenu();
 // intro splash: floating hexagon thumbnails + progress, then fade into the site
 (function splash() {
